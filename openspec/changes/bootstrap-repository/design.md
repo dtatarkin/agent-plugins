@@ -219,7 +219,8 @@ and commits nothing unless it finds something.
 - **A9** (section 1) Findings print as `path:line: match` (content),
   `path: path matches: match` (path), `path: link target matches: match`
   (symbolic link), `commit message:line: match` (message), and, in history
-  mode, the same prefixed with the commit id, or `ref ` / the tag's ref name.
+  mode, the same prefixed with the commit id, with `ref` and the ref name, or
+  with the tag's ref name.
 - **A10** (section 1) The guard and its self-test run `unset -f grep` before
   their first `grep`, so a shell function of that name never stands in for the
   binary; the self-test also unsets git's per-repository variables
@@ -230,6 +231,21 @@ and commits nothing unless it finds something.
   missing until section 2 adds them, which is expected, not a finding to fix
   here. `shellcheck` was run by hand (`uvx --from shellcheck-py shellcheck`)
   on both scripts and is clean.
+- **A12** (section 2) The archive part of the exclusion is applied to every
+  rewriting hook by name, as the frozen-archive rule asks, though the archive
+  is empty today; the read-only checks (`check-yaml`, `yamllint`, `gitleaks`,
+  `shellcheck` and the rest) still read the generated files and the archive.
+- **A13** (section 2) `tasks.md` lines are wrapped at 120 with two-space
+  continuation lines, to meet MD013; the OpenSpec CLI still counts every task,
+  and reports only a task's first line as its description. The section-2
+  all-files run reformatted no file outside what the configuration added (its
+  one markdown fix, in this design, was replaced by a hand rewording), so no
+  separate reformat commit and no `.git-blame-ignore-revs` were needed.
+- **A14** (section 2) `typos` accepts `mis` (the prefix in "mis-set") through
+  `_typos.toml`; it rewrote nothing on its solo run.
+- **A15** (section 2) "The guard's hooks carry no `files:`/`exclude:`" is read
+  as the two checking hooks; the self-test hook keeps the `files:` D8 gives it,
+  which narrows only when the test runs, never what the guard checks.
 
 ## Risks / Trade-offs
 
@@ -253,7 +269,17 @@ and commits nothing unless it finds something.
 
 Recorded by the apply sections for the sections after them.
 
-- Generated-tree exclusion confirmed (section 2): *(to be filled)*
+- Generated-tree exclusion confirmed (section 2): **A6 as written**,
+  `^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)`.
+  In a throwaway worktree with every exclusion removed, `prek run --all-files`
+  followed by `openspec update --force` (CLI 1.16.0) re-dirtied exactly the 24
+  generated files under `.claude/commands/opsx/` and
+  `.claude/skills/openspec-*/` (rewritten by `rumdl-check --fix`) and nothing
+  else; on the generated tree alone, `openspec update --force` changes nothing.
+  The pattern sits on every rewriting hook (`trailing-whitespace`,
+  `end-of-file-fixer`, `mixed-line-ending`, `taplo-format`, `rumdl-check`), and
+  as globs in `_typos.toml` and `.rumdl.toml`; with it, `openspec update
+  --force` after a passing all-files run leaves the tree unchanged.
 - Symbolic-link blob read by `git grep --cached` (section 1): **not read**.
   With git 2.53.0, neither `git grep --cached` nor `git grep <commit>` matches
   a symbolic link's target, so the guard reads every link's blob with

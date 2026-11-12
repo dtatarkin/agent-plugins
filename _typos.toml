@@ -1,0 +1,13 @@
+[files]
+# The files `openspec update` generates, and the archive of closed changes.
+extend-exclude = [
+  ".claude/commands/opsx/",
+  ".claude/skills/openspec-*/",
+  "openspec/changes/archive/",
+]
+
+[default.extend-words]
+# The prefix of a hyphenated word, as in "mis-set".
+mis = "mis"
+
+[default.extend-identifiers]

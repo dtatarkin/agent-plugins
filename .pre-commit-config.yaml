@@ -1,3 +1,15 @@
+# The house lint sets this repository's signals derive: the baseline set
+# (always), markup (YAML, TOML and markdown files) and shell (the guard is a
+# bash script). No Python, infrastructure, web or data signal. The repository
+# tracks no lockfile, so the local formatter hooks call their tools by name.
+#
+# There is no top-level `exclude:`: it would exempt paths from the
+# private-names guard too, and nothing is exempt from that. A tree a hook must
+# not rewrite is excluded on that hook, or in the tool's own configuration:
+# every hook that rewrites skips the files `openspec update` generates and the
+# archive of closed changes, by the pattern repeated on each such entry
+# (typos reads the same exclusion from _typos.toml).
+
 # One install (`prek install` or `pre-commit install`) installs both stages:
 # the guard checks staged files at pre-commit and the message at commit-msg.
 default_install_hook_types: [pre-commit, commit-msg]
@@ -31,3 +43,82 @@ repos:
         language: script
         files: ^(scripts/check-private-names|tests/check-private-names\.sh)$
         pass_filenames: false
+
+  # Baseline: file hygiene.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)
+      - id: end-of-file-fixer
+        exclude: ^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)
+      - id: mixed-line-ending
+        args: [--fix=lf]
+        exclude: ^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: debug-statements
+      - id: detect-private-key
+
+  # Baseline: secret scanning.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # Baseline: spelling (a fixer; its exclusions live in _typos.toml).
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.52.0
+    hooks:
+      - id: typos
+
+  # Baseline: justfile and nix formatting, by name (no lockfile pins them);
+  # inert while the repository holds no justfile and no nix file.
+  - repo: local
+    hooks:
+      - id: format-justfile
+        name: format justfile
+        entry: bash -c 'for f in "$@"; do just --fmt --unstable --justfile "$f"; done' --
+        language: system
+        files: (^|/)justfile$|\.just$
+      - id: nixfmt
+        name: nixfmt
+        entry: nixfmt
+        language: system
+        files: \.nix$
+
+  # Markup: YAML.
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [--strict]
+
+  # Markup: TOML.
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
+    hooks:
+      - id: taplo-format
+        exclude: ^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)
+
+  # Markup: markdown (its exclusions live in .rumdl.toml).
+  - repo: https://github.com/rvben/rumdl-pre-commit
+    rev: v0.3.2
+    hooks:
+      - id: rumdl-check
+        args: [--fix]
+        exclude: ^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)
+
+  # Shell.
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1-1
+    hooks:
+      - id: shellcheck

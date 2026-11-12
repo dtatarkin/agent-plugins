@@ -1,0 +1,15 @@
+[global]
+# The files `openspec update` generates, and the archive of closed changes.
+exclude = [
+  ".claude/commands/opsx/**",
+  ".claude/skills/openspec-*/**",
+  "openspec/changes/archive/**",
+]
+
+[MD013]
+line_length = 120
+tables = false
+code_blocks = false
+
+[MD041]
+enabled = false
