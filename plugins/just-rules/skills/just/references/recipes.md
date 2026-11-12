@@ -2,6 +2,7 @@
 paths:
   - "**/justfile"
   - "**/*.just"
+  - "**/.just"
 ---
 
 # Recipes — attributes, comments, bodies

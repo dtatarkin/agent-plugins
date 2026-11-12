@@ -37,9 +37,8 @@ paths:
 
 **Apply these rules to what you add or change.** Bringing the rest of a file,
 or of the repository, into line is a *separate act*, taken only when the user
-asks for it. These rules reach you wherever a lint configuration is read,
-including repositories whose conventions are not these; they are not a licence
-to rewrite one.
+asks for it. They hold in repositories whose conventions are not these too,
+and are not a licence to rewrite one.
 
 Inside a session, the checker's ratchet reports only what that session
 introduced, never what the file already held.

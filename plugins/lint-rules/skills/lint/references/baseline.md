@@ -203,6 +203,4 @@ badly-formatted nix file, because the repositories this set was drawn from keep
 their flakes at the umbrella root and none of them is a repository of its own:
 with the tool on the path the first run reformatted the file and the second
 passed clean, and with it off the path the hook failed saying the executable
-was not found. The tool came from `nixpkgs#nixfmt`, which is the RFC-style
-formatter now — `nixfmt-rfc-style` is an alias for the same derivation, and
-`nixfmt-classic` has been removed from nixpkgs.
+was not found. The tool is `nixpkgs#nixfmt`, the RFC-style formatter.

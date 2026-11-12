@@ -27,7 +27,7 @@ dependencies and the checkers, and its set arrives in the runner form, the
 lockfile hooks with it. This is not a lockfile made for lint's sake: the
 dependencies exist either way and were pinned nowhere. The project file is
 where they are declared once, the lockfile is what pins them, and the hooks
-follow from the lockfile as in any repository. Decided 2026-10-31.
+follow from the lockfile as in any repository.
 
 - **Inline script metadata leaves.** `uv run` on a script carrying a
   `# /// script` block resolves the block and ignores the project (measured,
@@ -57,7 +57,7 @@ Use `ruff-check`, never the legacy alias that upstream keeps for
 backwards-compatibility; two repositories writing the same hook under two ids
 is exactly the drift this standard exists to remove.
 
-**`ruff-format` must be narrowed.** Upstream's default type list now claims
+**`ruff-format` must be narrowed.** Upstream's default type list includes
 markdown as well as Python, so left alone it reformats markdown files — which
 belong to the markup topic's tool. One tool per concern means the narrowing is
 part of the entry, not a project's taste.
@@ -272,7 +272,7 @@ This entry is longer than the house line width, and the configuration file is
 itself linted, so write it as a folded scalar (`entry: >-`) broken before the
 pipe. The folded form joins the lines with a space and the command is
 unchanged. A one-line entry copied verbatim from a topic is the first thing the
-YAML gate fails on — which is how this was found.
+YAML gate fails on.
 
 `--no-emit-workspace`, not `--no-emit-project`. The narrower flag drops only
 the root project, so in a workspace every sibling member still exports as an
