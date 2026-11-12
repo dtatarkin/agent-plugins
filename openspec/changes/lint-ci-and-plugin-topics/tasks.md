@@ -50,17 +50,17 @@ that stay there (design.md A5). Searches use `git grep` or `command grep`.
 
 ## 2. Link checking end to end
 
-- [ ] 2.1 In the checker, add `HouseHook("lychee", "markup", Signal.MARKUP)` and its canon (flags `--offline`,
+- [x] 2.1 In the checker, add `HouseHook("lychee", "markup", Signal.MARKUP)` and its canon (flags `--offline`,
   `--no-progress`) in `consts.py`. Add tests:
   - in `tests/lintlint/test_rules.py`: a markup tree lacking lychee reports `missing-hook`; lychee without either flag
     reports `hook-args`;
   - `test_citations.py` passes with the new entries.
 
   Verify: those tests pass.
-- [ ] 2.2 Add the lychee entry of design.md D4 to the configuration of each fixture under `tests/lintlint/data/` that
+- [x] 2.2 Add the lychee entry of design.md D4 to the configuration of each fixture under `tests/lintlint/data/` that
   carries the markup signal, keeping every fixture's expected findings. Verify: `uv run pytest tests/lintlint` passes,
   except `test_acceptance.py` until 2.3.
-- [ ] 2.3 Converge this repository: add `# Markup: links.` with lychee to `.pre-commit-config.yaml`, pinned per D9 to a
+- [x] 2.3 Converge this repository: add `# Markup: links.` with lychee to `.pre-commit-config.yaml`, pinned per D9 to a
   `lychee-v*` tag past the cooldown, with the age checked by hand.
   - Run `prek run lychee --all-files`. A dead relative link in a live file is fixed. One inside the archive of closed
     changes is excluded on the hook, by the pattern the rewriting hooks already carry.

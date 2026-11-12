@@ -165,6 +165,14 @@ repos:
         args: [--fix]
         exclude: ^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)
 
+  # Markup: links.
+  - repo: https://github.com/lycheeverse/lychee
+    rev: lychee-v0.24.2
+    hooks:
+      - id: lychee
+        args: [--offline, --no-progress]
+        types: [markdown]
+
   # Shell.
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1-1

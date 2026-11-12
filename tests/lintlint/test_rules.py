@@ -136,6 +136,12 @@ class TestTheHookSet:
         edit(tree, "      - id: validate-pyproject\n", "      - id: project-drift\n")
         assert audit(tree)[0].topic == "python"
 
+    def test_a_markup_tree_without_the_link_checker(self, tree: Path) -> None:
+        edit(tree, "      - id: lychee\n", "      - id: link-drift\n")
+        findings = audit(tree)
+        assert pairs(findings) == {("lychee", "missing-hook")}
+        assert findings[0].topic == "markup"
+
     def test_three_dropped_hygiene_ids_are_three_findings(self, tree: Path) -> None:
         for hook in ("check-json", "check-symlinks", "debug-statements"):
             edit(tree, f"      - id: {hook}\n", "")
@@ -251,6 +257,8 @@ class TestCanonicalArguments:
             ("        types_or: [python, pyi, jupyter]\n", "", "ruff-format", "types_or"),
             ("        args: [--fix=lf]\n", "", "mixed-line-ending", "--fix=lf"),
             ("rumdl-check\n        args: [--fix]\n", "rumdl-check\n", "rumdl-check", "--fix"),
+            ("[--offline, --no-progress]", "[--no-progress]", "lychee", "--offline"),
+            ("[--offline, --no-progress]", "[--offline]", "lychee", "--no-progress"),
         ],
     )
     def test_the_argument_is_named(
@@ -484,6 +492,13 @@ repos:
     hooks:
       - id: rumdl-check
         args: [--fix]
+
+  - repo: https://github.com/lycheeverse/lychee
+    rev: lychee-v0.24.2
+    hooks:
+      - id: lychee
+        args: [--offline, --no-progress]
+        types: [markdown]
 
   - repo: local
     hooks:

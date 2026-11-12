@@ -73,6 +73,7 @@ HOUSE_HOOKS: tuple[HouseHook, ...] = (
     HouseHook("yamllint", "markup", Signal.MARKUP),
     HouseHook("taplo-format", "markup", Signal.MARKUP),
     HouseHook("rumdl-check", "markup", Signal.MARKUP),
+    HouseHook("lychee", "markup", Signal.MARKUP),
     HouseHook("shellcheck", "shell", Signal.SHELL),
     HouseHook("terraform-fmt", "infra", Signal.TERRAFORM),
     HouseHook("terraform-validate", "infra", Signal.TERRAFORM),
@@ -124,6 +125,8 @@ HOOK_CANON: dict[str, Canon] = {
     "mixed-line-ending": Canon("baseline", flags=("--fix=lf",)),
     "yamllint": Canon("markup", flags=("--strict",)),
     "rumdl-check": Canon("markup", flags=("--fix",)),
+    # Supplying `args:` replaces upstream's `--no-progress`, so both are canon.
+    "lychee": Canon("markup", flags=("--offline", "--no-progress")),
     "ansible-lint": Canon("infra", flags=("--offline",), whole_program=True, serial=True),
     "pip-audit": Canon("python", flags=("--no-emit-workspace",), whole_program=True, manual=True),
     "mypy": Canon("python", whole_program=True, filtered=True),

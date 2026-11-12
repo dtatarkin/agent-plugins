@@ -58,6 +58,13 @@ repos:
     hooks:
       - id: yamllint
 
+  - repo: https://github.com/lycheeverse/lychee
+    rev: lychee-v0.24.2
+    hooks:
+      - id: lychee
+        args: [--offline, --no-progress]
+        types: [markdown]
+
   - repo: https://github.com/abravalheri/validate-pyproject
     rev: "0.26"
     hooks:
