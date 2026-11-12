@@ -1,5 +1,13 @@
 schema: spec-driven
 
+context: |
+  This repository is public: every artifact, path, commit message and branch
+  name in it is published. None may name anything the private-names guard's
+  list holds. That list is held outside the repository; refer to it only as
+  the file named by AGENT_PLUGINS_PRIVATE_NAMES, or the fallback
+  ~/.config/agent-plugins/private-names, never by its entries.
+  Write every artifact in English.
+
 # Project context (optional)
 # Add only constraints that should guide OpenSpec artifacts and workflows.
 # Include constraints an agent cannot infer by reading the code.

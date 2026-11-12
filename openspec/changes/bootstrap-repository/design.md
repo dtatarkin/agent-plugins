@@ -246,6 +246,13 @@ and commits nothing unless it finds something.
 - **A15** (section 2) "The guard's hooks carry no `files:`/`exclude:`" is read
   as the two checking hooks; the self-test hook keeps the `files:` D8 gives it,
   which narrows only when the test runs, never what the guard checks.
+- **A16** (section 3) `claude plugin validate .` (Claude Code 2.1.316) accepts
+  the empty marketplace, with one warning: the marketplace defines no plugins.
+  That is task 3.3's pass. `claude plugin validate --strict .` fails on that
+  warning alone, once the requested `metadata.description` is present, and
+  cannot pass until a plugin is listed; the first change that adds a plugin
+  re-runs `--strict` (a later slot makes `--strict` a lint check). No
+  placeholder plugin is added.
 
 ## Risks / Trade-offs
 

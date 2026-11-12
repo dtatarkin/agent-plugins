@@ -51,16 +51,16 @@ current branch; nothing is pushed.
 
 ## 3. Repository files
 
-- [ ] 3.1 Write `LICENSE`: the MIT licence text with `Copyright (c) 2026 Dmitry Tatarkin`. Verify: the file matches the
+- [x] 3.1 Write `LICENSE`: the MIT licence text with `Copyright (c) 2026 Dmitry Tatarkin`. Verify: the file matches the
   standard MIT text apart from the copyright line.
-- [ ] 3.2 Write `README.md` as design.md D12 describes. Verify: `prek run rumdl-check --files README.md` passes and the
+- [x] 3.2 Write `README.md` as design.md D12 describes. Verify: `prek run rumdl-check --files README.md` passes and the
   commands it gives (`prek install`, the variable and the fallback path) match the hook configuration and the guard.
-- [ ] 3.3 Write `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json` as design.md D11 gives them.
+- [x] 3.3 Write `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json` as design.md D11 gives them.
   Verify: `claude plugin validate .` passes, and `claude plugin validate --strict .` passes after any metadata it asks
   for is added; if an empty `plugins` list is rejected, stop and report (design.md Risks).
-- [ ] 3.4 Add the `context` of design.md D12 to `openspec/config.yaml`. Verify: `openspec validate bootstrap-repository`
+- [x] 3.4 Add the `context` of design.md D12 to `openspec/config.yaml`. Verify: `openspec validate bootstrap-repository`
   still passes and `prek run yamllint --files openspec/config.yaml` is clean.
-- [ ] 3.5 Commit the section (`add licence, README, marketplaces and OpenSpec context`). Verify: the commit passes every
+- [x] 3.5 Commit the section (`add licence, README, marketplaces and OpenSpec context`). Verify: the commit passes every
   hook.
 
 ## 4. History sweep

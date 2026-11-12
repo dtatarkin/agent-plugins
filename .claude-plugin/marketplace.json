@@ -1,0 +1,11 @@
+{
+  "name": "agent-plugins",
+  "owner": {
+    "name": "Dmitry Tatarkin",
+    "email": "tatarkin@gmail.com"
+  },
+  "metadata": {
+    "description": "Agent plugins that carry coding conventions."
+  },
+  "plugins": []
+}
