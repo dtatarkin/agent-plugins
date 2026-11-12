@@ -30,15 +30,15 @@
 
 ## 3. Antigravity CLI: install, subdirectory answer, skill run, hooks, and the record's second half
 
-- [ ] 3.1 Run the `agy` measurement of design.md D6 from the main checkout: version before, `agy plugin validate
+- [x] 3.1 Run the `agy` measurement of design.md D6 from the main checkout: version before, `agy plugin validate
   <clone>/plugins/<name> --strict --json` and `agy plugin install <clone>/plugins/<name>` for `python-rules` and
   `lint-rules`, then inspect each installed folder for the subdirectory answer (only that plugin's files; copy or
   link; manifest mode). Stop as design.md D9 says if a third manifest is needed. Verify: `agy plugin list --json`
   shows both plugins.
-- [ ] 3.2 Run the `agy` skill run of design.md D7 and the hooks observation of design.md D8, then read the version
+- [x] 3.2 Run the `agy` skill run of design.md D7 and the hooks observation of design.md D8, then read the version
   again. Verify: the transcript shows the plugin's `SKILL.md` or a `python-rules` topic file being read and the answer
   drawn from it; the hooks outcome is one of not loaded, fired or failed.
-- [ ] 3.3 Fill the Antigravity CLI section of `docs/host-support.md` from 3.1 and 3.2, replacing "not yet measured".
+- [x] 3.3 Fill the Antigravity CLI section of `docs/host-support.md` from 3.1 and 3.2, replacing "not yet measured".
   Verify: every D10 item for the Antigravity CLI is present, including the subdirectory answer; the path grep of 2.3
   finds nothing; `prek run --files docs/host-support.md` passes without rewriting it.
 

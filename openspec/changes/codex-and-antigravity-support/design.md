@@ -336,6 +336,15 @@ None broken.
   probes on a scratch copy of the files under an isolated Codex configuration
   directory, so the only additions to the owner's Codex configuration are the
   `agent-plugins` marketplace and the two test installs.
+- A9. "Does not depend on the clone staying in place" is read from the
+  installed folder (a copy identical to the plugin's subdirectory, holding no
+  link), not from moving the clone. `agy`'s manifest mode (native) is read from
+  `agy plugin validate`'s note and the absence of the
+  `enable-agent-plugins-spec` flag in its configuration.
+- A10. `agy plugin validate --strict` fails on `lint-rules` (exit 1) on its one
+  warning, that `hooks/hooks.json` is never loaded; the Context's "passes"
+  holds for `python-rules` only. This is recorded, not fixed: hooks are
+  supported in Claude Code only (D1), and the install itself succeeds.
 
 ## Findings
 
