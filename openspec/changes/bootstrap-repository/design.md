@@ -210,6 +210,26 @@ and commits nothing unless it finds something.
   `^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)`,
   repeated literally on each rewriting hook that needs it. Section 2 records the
   pattern it confirmed under *Findings* below.
+- **A7** (section 1) A list line holding only whitespace counts as empty and is
+  dropped, like an empty line: as a pattern it would match nearly every line.
+- **A8** (section 1) Staged mode with no path handed to it checks nothing and
+  exits 0, after the list has been read and compiled; it does not go looking
+  for staged paths itself (D4). The pre-commit hook's entry ends in `--`, so a
+  path starting with `-` is never read as an option.
+- **A9** (section 1) Findings print as `path:line: match` (content),
+  `path: path matches: match` (path), `path: link target matches: match`
+  (symbolic link), `commit message:line: match` (message), and, in history
+  mode, the same prefixed with the commit id, or `ref ` / the tag's ref name.
+- **A10** (section 1) The guard and its self-test run `unset -f grep` before
+  their first `grep`, so a shell function of that name never stands in for the
+  binary; the self-test also unsets git's per-repository variables
+  (`git rev-parse --local-env-vars`) and the committer's git configuration, so
+  that running as a hook does not leak into its throwaway repository.
+- **A11** (section 1) The section-1 hook configuration holds only the guard's
+  hooks (task 1.3); the `lint-lint` edit hook reports every house hook as
+  missing until section 2 adds them, which is expected, not a finding to fix
+  here. `shellcheck` was run by hand (`uvx --from shellcheck-py shellcheck`)
+  on both scripts and is clean.
 
 ## Risks / Trade-offs
 
@@ -234,4 +254,9 @@ and commits nothing unless it finds something.
 Recorded by the apply sections for the sections after them.
 
 - Generated-tree exclusion confirmed (section 2): *(to be filled)*
-- Symbolic-link blob read by `git grep --cached` (section 1): *(to be filled)*
+- Symbolic-link blob read by `git grep --cached` (section 1): **not read**.
+  With git 2.53.0, neither `git grep --cached` nor `git grep <commit>` matches
+  a symbolic link's target, so the guard reads every link's blob with
+  `git cat-file blob` instead, in staged mode (links found through
+  `git ls-files -s`, mode `120000`) and in history mode (through
+  `git ls-tree -r`). The self-test covers both.

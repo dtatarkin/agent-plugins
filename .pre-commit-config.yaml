@@ -1,0 +1,33 @@
+# One install (`prek install` or `pre-commit install`) installs both stages:
+# the guard checks staged files at pre-commit and the message at commit-msg.
+default_install_hook_types: [pre-commit, commit-msg]
+# With commit-msg installed, a hook whose manifest declares no stages would
+# also run there and be handed the message file; keep such hooks at pre-commit.
+default_stages: [pre-commit]
+
+repos:
+  - repo: local
+    hooks:
+      # Every staged path, whatever its type: `types: []` keeps symbolic links
+      # and submodule paths, which the default `types: [file]` would drop. No
+      # `files:` or `exclude:`, here or at the top level: nothing is exempt.
+      # The `--` keeps a path starting with `-` from reading as an option.
+      - id: check-private-names
+        name: check-private-names
+        entry: scripts/check-private-names --
+        language: script
+        types: []
+      # The commit message file git hands the commit-msg stage.
+      - id: check-private-names-message
+        name: check-private-names (message)
+        entry: scripts/check-private-names --message
+        language: script
+        stages: [commit-msg]
+      # The self-test builds its own throwaway repository, so it takes no
+      # filenames; it runs whenever the guard or the test changes.
+      - id: check-private-names-selftest
+        name: check-private-names (self-test)
+        entry: tests/check-private-names.sh
+        language: script
+        files: ^(scripts/check-private-names|tests/check-private-names\.sh)$
+        pass_filenames: false

@@ -1,0 +1,243 @@
+#!/usr/bin/env bash
+# Fail a commit that would publish a name the private-names list holds.
+#
+#   check-private-names [PATH...]        staged paths and their content as staged
+#   check-private-names --message FILE   a commit message, as git will keep it
+#   check-private-names --history        every reachable commit, ref and tag
+#
+# The list is read from the file named by $AGENT_PLUGINS_PRIVATE_NAMES when it
+# is set and non-empty, and otherwise from ~/.config/agent-plugins/private-names.
+# One POSIX extended regular expression per line, matched case-sensitively;
+# lines starting with '#' and blank lines are ignored.
+#
+# Exit codes: 0 clean, 1 findings, 2 the guard cannot run (no usable list,
+# an invalid pattern, a git or grep error). Findings print the matched text,
+# so this guard runs only on a committer's machine, never in hosted CI.
+set -euo pipefail
+
+# The path as a committer reads it; it is displayed, never expanded.
+# shellcheck disable=SC2088
+readonly fallback_display='~/.config/agent-plugins/private-names'
+readonly scissors='# ------------------------ >8 ------------------------'
+
+die() {
+	printf 'check-private-names: %s\n' "$1" >&2
+	exit 2
+}
+
+no_list() {
+	die "$1; give the list through AGENT_PLUGINS_PRIVATE_NAMES or ${fallback_display}"
+}
+
+# The variable, when set, is the only source: a mis-set variable must not
+# silently fall through to another list.
+if [[ -n ${AGENT_PLUGINS_PRIVATE_NAMES:-} ]]; then
+	list=$AGENT_PLUGINS_PRIVATE_NAMES
+	[[ -f $list && -r $list ]] ||
+		no_list "AGENT_PLUGINS_PRIVATE_NAMES names '${list}', which is not a readable file"
+else
+	list="${HOME}/.config/agent-plugins/private-names"
+	[[ -f $list && -r $list ]] ||
+		no_list "AGENT_PLUGINS_PRIVATE_NAMES is unset and ${fallback_display} is not a readable file"
+fi
+
+# A function named grep (some interactive shells export one) must not
+# stand in for the real binary.
+unset -f grep 2>/dev/null || true
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+readonly patterns="${work}/patterns"
+
+# Drop comments and blank lines: a blank pattern would match every line.
+sed -e '/^#/d' -e '/^[[:space:]]*$/d' -- "$list" >"$patterns"
+[[ -s $patterns ]] || no_list "the list '${list}' holds no pattern"
+
+# Compile the patterns once up front, so an invalid one stops the guard
+# instead of reading as "no match" later.
+rc=0
+grep -E -f "$patterns" </dev/null >/dev/null 2>&1 || rc=$?
+((rc < 2)) || no_list "the list '${list}' holds a pattern that is not a valid extended regular expression"
+
+found=0
+
+# Read a grep or git grep status: 0 is a match, 1 none, anything else an error.
+status() {
+	case $1 in
+	0) found=1 ;;
+	1) ;;
+	*) die "$2 failed (exit $1)" ;;
+	esac
+}
+
+# Print each match of the patterns in stdin, one line per match, as "PREFIX MATCH".
+report_lines() {
+	local prefix=$1 rc=0 out
+	out=$(grep -a -n -o -E -f "$patterns") || rc=$?
+	status "$rc" grep
+	if ((rc == 0)); then
+		local line
+		while IFS= read -r line; do
+			printf '%s%s: %s\n' "$prefix" "${line%%:*}" "${line#*:}"
+		done <<<"$out"
+	fi
+}
+
+# Match a list of paths, one per line on stdin, printing "PREFIXpath: MATCH".
+report_paths() {
+	local prefix=$1 rc=0 hits
+	hits=$(grep -a -E -f "$patterns") || rc=$?
+	status "$rc" grep
+	if ((rc == 0)); then
+		local path match
+		while IFS= read -r path; do
+			while IFS= read -r match; do
+				printf '%s%s: path matches: %s\n' "$prefix" "$path" "$match"
+			done < <(printf '%s\n' "$path" | grep -a -o -E -f "$patterns" || true)
+		done <<<"$hits"
+	fi
+}
+
+# Read git grep -z -n -o output (path NUL line NUL match LF) and print
+# "PREFIXpath:line: match", dropping STRIP from the front of each path.
+format_git_grep() {
+	local prefix=$1 strip=$2 path line match
+	while IFS= read -r -d '' path && IFS= read -r -d '' line && IFS= read -r match; do
+		printf '%s%s:%s: %s\n' "$prefix" "${path#"$strip"}" "$line" "$match"
+	done
+}
+
+# Content of the given tree-ish (or the index, with --cached), restricted to
+# the given pathspecs. git grep does not read a symbolic link's blob, so the
+# link targets are matched separately by the caller.
+grep_content() {
+	local prefix=$1 strip=$2 rc=0
+	shift 2
+	# To a file, not a variable: the output is NUL-separated.
+	git -c grep.column=false --literal-pathspecs grep -z -n -o -E --text \
+		-f "$patterns" "$@" >"${work}/grep" || rc=$?
+	status "$rc" 'git grep'
+	if ((rc == 0)); then
+		format_git_grep "$prefix" "$strip" <"${work}/grep"
+	fi
+}
+
+# Match one symbolic link's target, read from its blob.
+grep_link() {
+	local prefix=$1 path=$2 blob=$3 rc=0 out
+	out=$(git cat-file blob "$blob" | grep -a -o -E -f "$patterns") || rc=$?
+	status "$rc" grep
+	if ((rc == 0)); then
+		local match
+		while IFS= read -r match; do
+			printf '%s%s: link target matches: %s\n' "$prefix" "$path" "$match"
+		done <<<"$out"
+	fi
+}
+
+# Symbolic links among NUL-separated "mode SP type-or-object ... TAB path"
+# records (ls-files -s and ls-tree -r share the mode-first, tab-path shape).
+grep_links() {
+	local prefix=$1 record meta path
+	while IFS= read -r -d '' record; do
+		meta=${record%%$'\t'*}
+		path=${record#*$'\t'}
+		[[ $meta == 120000\ * ]] || continue
+		# ls-files -s: "mode object stage"; ls-tree: "mode type object".
+		local -a fields
+		read -r -a fields <<<"$meta"
+		if [[ ${fields[1]} == blob ]]; then
+			grep_link "$prefix" "$path" "${fields[2]}"
+		else
+			grep_link "$prefix" "$path" "${fields[1]}"
+		fi
+	done
+}
+
+staged() {
+	(($# > 0)) || return 0
+	printf '%s\n' "$@" >"${work}/paths"
+	report_paths '' <"${work}/paths"
+	grep_content '' '' --cached -- "$@"
+	git --literal-pathspecs ls-files -s -z -- "$@" >"${work}/index" ||
+		die 'git ls-files failed'
+	grep_links '' <"${work}/index"
+}
+
+message() {
+	local file=$1
+	[[ -f $file && -r $file ]] || die "cannot read the commit message file '${file}'"
+	# Keep what git keeps: stop at the scissors line, drop '#' comment lines.
+	# Each kept line is prefixed with its original number, then matched alone.
+	awk -v scissors="$scissors" '
+		$0 == scissors { exit }
+		/^#/ { next }
+		{ print NR "\t" $0 }
+	' "$file" >"${work}/message" || die 'cannot read the commit message'
+	local num text rc out match
+	while IFS=$'\t' read -r num text; do
+		rc=0
+		out=$(printf '%s\n' "$text" | grep -a -o -E -f "$patterns") || rc=$?
+		status "$rc" grep
+		if ((rc == 0)); then
+			while IFS= read -r match; do
+				printf 'commit message:%s: %s\n' "$num" "$match"
+			done <<<"$out"
+		fi
+	done <"${work}/message"
+}
+
+history() {
+	git rev-list --all >"${work}/commits" || die 'git rev-list failed'
+	local commit
+	while IFS= read -r commit; do
+		grep_content "${commit}: " "${commit}:" "$commit"
+		git ls-tree -r -z "$commit" >"${work}/tree" || die "git ls-tree ${commit} failed"
+		# Paths: the part after the tab of each record, one per line.
+		tr '\0' '\n' <"${work}/tree" | awk '{ sub(/^[^\t]*\t/, ""); print }' >"${work}/tree-paths"
+		report_paths "${commit}: " <"${work}/tree-paths"
+		grep_links "${commit}: " <"${work}/tree"
+		git log -1 --format='author %an <%ae>%ncommitter %cn <%ce>%n%B' "$commit" \
+			>"${work}/log" || die "git log ${commit} failed"
+		report_lines "${commit}: identity and message line " <"${work}/log"
+	done <"${work}/commits"
+
+	git for-each-ref --format='%(refname)' >"${work}/refs" || die 'git for-each-ref failed'
+	report_paths 'ref ' <"${work}/refs"
+
+	git for-each-ref refs/tags \
+		--format='%(if:equals=tag)%(objecttype)%(then)%(refname)%(end)' \
+		>"${work}/tags" || die 'git for-each-ref failed'
+	local tag
+	while IFS= read -r tag; do
+		[[ -n $tag ]] || continue
+		git cat-file tag "$tag" >"${work}/tag" || die "git cat-file ${tag} failed"
+		report_lines "${tag}: tag object line " <"${work}/tag"
+	done <"${work}/tags"
+}
+
+case ${1:-} in
+--message)
+	(($# == 2)) || die 'usage: check-private-names --message FILE'
+	message "$2"
+	;;
+--history)
+	(($# == 1)) || die 'usage: check-private-names --history'
+	history
+	;;
+--)
+	shift
+	staged "$@"
+	;;
+-*)
+	die "unknown option '$1'"
+	;;
+*)
+	staged "$@"
+	;;
+esac
+
+if ((found)); then
+	printf 'check-private-names: the list matched; nothing above may be committed\n' >&2
+	exit 1
+fi
