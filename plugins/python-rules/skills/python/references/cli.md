@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.py"
+---
+
 # CLI — recommendations
 
 Recommendations for building command-line interfaces. Prefer these defaults;

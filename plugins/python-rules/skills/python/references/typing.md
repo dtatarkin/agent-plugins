@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.py"
+---
+
 # Typing — recommendations
 
 Recommendations for typing Python code. Prefer these defaults; deviate when a

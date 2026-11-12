@@ -8,6 +8,19 @@ context: |
   ~/.config/agent-plugins/private-names, never by its entries.
   Write every artifact in English.
 
+rules:
+  design:
+    - >-
+      Include a "House rules" section naming each of this repository's own
+      plugins whose rules the change touches (python-rules, plugin-rules,
+      lint-rules, just-rules; the directories under plugins/ regenerate the
+      list), and every rule the design deliberately breaks, each with its
+      reason. Example: "python-rules cli.md: argv is hand-parsed, because the
+      hook must run without a virtual environment." Not: "follows the house
+      rules", which names nothing checkable. Write "None broken" when none
+      is. This is a reminder of the Deviating section of AGENTS.md, the
+      normative home.
+
 # Project context (optional)
 # Add only constraints that should guide OpenSpec artifacts and workflows.
 # Include constraints an agent cannot infer by reading the code.

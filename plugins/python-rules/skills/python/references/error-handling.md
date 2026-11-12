@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.py"
+---
+
 # Error handling — recommendations
 
 Recommendations for signalling failure. Prefer these defaults; deviate when a

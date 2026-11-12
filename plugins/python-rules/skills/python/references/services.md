@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.py"
+---
+
 # Services / use-cases — recommendations
 
 Recommendations for structuring application/service logic. Prefer these defaults;

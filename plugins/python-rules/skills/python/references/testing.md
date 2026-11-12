@@ -1,3 +1,11 @@
+---
+paths:
+  - "**/tests/**/*.py"
+  - "**/test_*.py"
+  - "**/*_test.py"
+  - "**/conftest.py"
+---
+
 # Testing — recommendations
 
 General pytest conventions. Prefer these defaults; deviate when a situation

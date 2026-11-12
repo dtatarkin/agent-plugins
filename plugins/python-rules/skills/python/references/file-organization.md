@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.py"
+---
+
 # File organization — recommendations
 
 Recommendations for organizing modules and packages. Prefer these defaults;

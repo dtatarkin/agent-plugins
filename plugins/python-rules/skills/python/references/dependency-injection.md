@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.py"
+---
+
 # Dependency injection — recommendations
 
 Recommendations for wiring dependencies. Prefer these defaults; deviate when a

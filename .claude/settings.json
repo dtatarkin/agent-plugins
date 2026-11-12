@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "enabledPlugins": {
+    "python-rules@agent-plugins": true,
+    "plugin-rules@agent-plugins": true,
+    "lint-rules@agent-plugins": true
+  }
+}

@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.py"
+---
+
 # Comments — what the code cannot say
 
 A comment states what the code cannot: a constraint, a rationale, a surprise.

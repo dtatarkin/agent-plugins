@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.py"
+---
+
 # Configuration — recommendations
 
 Recommendations for loading and validating configuration. Prefer these defaults;
