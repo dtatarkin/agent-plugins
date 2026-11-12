@@ -327,6 +327,15 @@ None broken.
   memory.
 - A6. A stop under D9 is recorded under "Findings" below; with no such entry,
   no host needed a third manifest.
+- A7. Codex's hooks outcome is read from its app server: `plugin/read` for
+  `lint-rules` and `hooks/list` for a working directory, which list a plugin's
+  hooks with their trust status when Codex loads them. Both were empty, so the
+  record says "not loaded" rather than "untrusted"; a later Codex release may
+  load them, which the GitHub install would show.
+- A8. Which marketplace file and which manifest Codex reads was settled by
+  probes on a scratch copy of the files under an isolated Codex configuration
+  directory, so the only additions to the owner's Codex configuration are the
+  `agent-plugins` marketplace and the two test installs.
 
 ## Findings
 

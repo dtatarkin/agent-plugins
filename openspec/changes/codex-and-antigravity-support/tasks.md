@@ -13,17 +13,17 @@
 
 ## 2. Codex: install, skill run, hooks, and the record's first half
 
-- [ ] 2.1 Run the Codex measurement of design.md D5 from the main checkout, against the marketplace file section 1
+- [x] 2.1 Run the Codex measurement of design.md D5 from the main checkout, against the marketplace file section 1
   landed: version, `codex plugin marketplace add <clone> --json`, `codex plugin list --available --json` (all nine
   listed; which marketplace file was read), `codex plugin add python-rules@agent-plugins --json` and the same for
   `lint-rules`. If an install fails for want of a third manifest, stop as design.md D9 says, recording under its
   "Findings". If it fails on the marketplace file's format, fix the file, re-run section 1's test, and re-measure.
   Verify: `codex plugin list --json` shows both plugins installed from `agent-plugins`.
-- [ ] 2.2 Run the Codex skill run of design.md D7 and the hooks observation of design.md D8, with
+- [x] 2.2 Run the Codex skill run of design.md D7 and the hooks observation of design.md D8, with
   `--dangerously-bypass-hook-trust` never passed. Verify: the transcript shows the plugin's `SKILL.md` or a
   `python-rules` topic file being read and the answer drawn from it; the hooks outcome is one of not loaded, untrusted,
   fired or failed.
-- [ ] 2.3 Create `docs/host-support.md` as design.md D10 gives it, with the Claude Code note, the Codex section filled
+- [x] 2.3 Create `docs/host-support.md` as design.md D10 gives it, with the Claude Code note, the Codex section filled
   from 2.1 and 2.2, and the Antigravity CLI section present but marked "not yet measured" (design.md A5). Verify: every
   D10 item for Codex is present; `command grep -nE '/home/|/Users/|~/' docs/host-support.md` finds nothing; `prek run
   --files docs/host-support.md` passes without rewriting it (re-read anything the markdown hook changed).
