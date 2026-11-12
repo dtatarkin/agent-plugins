@@ -15,6 +15,8 @@ Antigravity CLI.
   are edited.
 - `metabase-rules`: Metabase queries, collections, and content kept as code.
 - `redis-rules`: distributed locking with Redis.
+- `plugin-rules`: how an agent plugin is authored (rule files, router skills,
+  manifests and hooks).
 
 ## Install in Claude Code
 

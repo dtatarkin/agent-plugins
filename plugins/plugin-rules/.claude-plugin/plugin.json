@@ -1,0 +1,17 @@
+{
+  "name": "plugin-rules",
+  "description": "Agent plugin authoring conventions — one canonical copy of each rule in tool-neutral prose, a thin router skill per domain, brief rule files with `paths:` frontmatter, the two portable manifests, exec-form hooks, and parsing every manifest before commit. Load when writing or changing a plugin's skill, rule files, manifests or hooks.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Dmitry Tatarkin",
+    "email": "tatarkin@gmail.com"
+  },
+  "keywords": [
+    "plugins",
+    "skills",
+    "manifests",
+    "hooks",
+    "conventions",
+    "rules"
+  ]
+}

@@ -229,3 +229,18 @@ base to migrate.
 - A3: The topic file names and the exact wording of the descriptions are
   reversible until the first release. The one-to-one mapping and the six
   globs are not open to change.
+- A4 (apply): "Each file opens with the line saying which plugins it binds"
+  (D3) is read as the first body line under the file's heading, because
+  every rule file of the house layout starts with a heading.
+- A5 (apply): `portable-manifest.md` says it binds every plugin meant for
+  hosts beyond Claude Code, conventions or not, since its requirement only
+  binds portable plugins; `hooks.md` says it binds every plugin that ships
+  hooks.
+- A6 (apply): `hooks.md` renders "its hooks run only in projects where the
+  plugin is enabled" as an author's obligation: declare hooks in the
+  plugin's `hooks/hooks.json` and nowhere else.
+- A7 (apply): `scope.md` holds only the scope statement (D2, D3, task 1.3),
+  so it is this plugin's instance of "Scoped rules state their scope", not
+  a restatement of that requirement for other plugins. A verifier holding
+  the ADDED requirement's "each stating its rationale inline" to `scope.md`
+  would find that rule unstated; changing it means changing D3.

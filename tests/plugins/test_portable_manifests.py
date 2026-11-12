@@ -27,6 +27,7 @@ PORTABLE = (
     "just-rules",
     "metabase-rules",
     "redis-rules",
+    "plugin-rules",
 )
 PERMITTED = frozenset(
     {
