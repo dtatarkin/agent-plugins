@@ -27,8 +27,26 @@ Antigravity CLI.
 /plugin install <name>@agent-plugins
 ```
 
-The Codex marketplace file (`.agents/plugins/marketplace.json`) lists nothing
-yet.
+## Install in Codex
+
+```sh
+codex plugin marketplace add dtatarkin/agent-plugins
+codex plugin add <name>@agent-plugins
+```
+
+## Install in the Antigravity CLI
+
+```sh
+git clone https://github.com/dtatarkin/agent-plugins
+agy plugin install agent-plugins/plugins/<name>
+```
+
+The install copies that one plugin into the Antigravity CLI's plugin folder, so
+the clone need not stay in place; re-run the install from an updated clone to
+update the plugin.
+
+[`docs/host-support.md`](docs/host-support.md) records each host's install as
+it was run, with its outcome.
 
 ## Install the checkers
 
@@ -41,6 +59,10 @@ uv tool install git+https://github.com/dtatarkin/agent-plugins
 
 Both plugins work without them: their hooks then check nothing, and one notice
 at session start says so.
+
+The hooks run in Claude Code only. Codex and the Antigravity CLI install these
+plugins' skills but did not load their hooks; what each host did with them is
+in [`docs/host-support.md`](docs/host-support.md).
 
 ## Attach rules on touch (Claude Code)
 

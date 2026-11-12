@@ -44,13 +44,13 @@
 
 ## 4. README install blocks
 
-- [ ] 4.1 Edit `README.md` as design.md D11 gives it: the Codex and Antigravity CLI install blocks in place of the
+- [x] 4.1 Edit `README.md` as design.md D11 gives it: the Codex and Antigravity CLI install blocks in place of the
   "lists nothing yet" sentence, the Antigravity block's sentence on whether the clone must stay taken from the
   subdirectory answer in `docs/host-support.md`, the hooks sentence taken from that file's hooks outcomes, and the
   pointer to `docs/host-support.md`. Verify: the README has exactly one install block for each of Claude Code, Codex
   and the Antigravity CLI and none for another host; each command it shows matches the form the record says was run,
   with the GitHub source in place of `<clone>`.
-- [ ] 4.2 Check the change against its spec and run the gates. Verify: each requirement of
+- [x] 4.2 Check the change against its spec and run the gates. Verify: each requirement of
   `specs/host-support/spec.md` is met by the tree or the record; `openspec validate codex-and-antigravity-support
   --strict` passes; `uv run pytest` passes; `prek run --all-files` passes without rewriting a file;
   `scripts/check-private-names` passes on the change's paths once they are staged.
