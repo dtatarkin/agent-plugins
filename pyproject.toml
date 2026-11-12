@@ -94,4 +94,6 @@ strict = true
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = "src"
-files = ["src/agent_plugins"]
+# The private-names guard is a stdlib-only script with no `.py` suffix, so it is
+# named here: discovery by suffix would skip it.
+files = ["src/agent_plugins", "scripts/check-private-names"]

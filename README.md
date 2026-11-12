@@ -108,8 +108,13 @@ in one of two ways:
   when the variable is set; or
 - `~/.config/agent-plugins/private-names`, when it is not.
 
-The file holds one POSIX extended regular expression per line; lines starting
-with `#` and empty lines are ignored. Without a list, every commit fails.
+The file holds one Python regular expression (`re` syntax) per line, matched
+case-sensitively; lines starting with `#` and empty lines are ignored. Without a
+list, every commit fails. Constructs that a POSIX extended regular expression
+reads differently are refused, and the guard names the line so you can rewrite
+it: a bracket expression such as `[[:alpha:]]` (write `[A-Za-z]`), `[[.x.]]`
+or `[[=x=]]`; `\<` and `\>` (write `\b`); and `` \` `` and `\'` (write `\A` and
+`\Z`). The guard needs `python3` 3.12 or later on `PATH`.
 
 `scripts/check-private-names --history` runs the same check over every commit
 reachable from any ref.

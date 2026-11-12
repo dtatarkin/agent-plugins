@@ -1,6 +1,6 @@
 # The house lint sets this repository's signals derive: the baseline set
 # (always), python (pyproject.toml and src/), markup (YAML, TOML and markdown
-# files), shell (the guard is a bash script), and agent plugins (each plugin's
+# files), shell (scripts/link-rules is a bash script), and agent plugins (each plugin's
 # portable plugin.json declares the Agent Plugins schema, and its
 # .claude-plugin/ manifests and the marketplace are Claude manifests). No
 # infrastructure, web, data or workflow signal. uv.lock is tracked, so the Python set carries its lockfile hook and
@@ -38,13 +38,14 @@ repos:
         entry: scripts/check-private-names --message
         language: script
         stages: [commit-msg]
-      # The self-test builds its own throwaway repository, so it takes no
-      # filenames; it runs whenever the guard or the test changes.
+      # The self-test builds its own throwaway repositories, so it takes no
+      # filenames; it runs whenever the guard or the test changes. The guard
+      # itself needs no environment; its test runs through the lockfile.
       - id: check-private-names-selftest
         name: check-private-names (self-test)
-        entry: tests/check-private-names.sh
-        language: script
-        files: ^(scripts/check-private-names|tests/check-private-names\.sh)$
+        entry: uv run pytest -q tests/test_check_private_names.py
+        language: system
+        files: ^(scripts/check-private-names|tests/test_check_private_names\.py)$
         pass_filenames: false
 
   # Baseline: file hygiene.
@@ -115,7 +116,8 @@ repos:
         pass_filenames: false
       - id: ty
         name: ty
-        entry: uv run ty check src tests
+        # The guard script has no `.py` suffix, so it is named on its own.
+        entry: uv run ty check src tests scripts/check-private-names
         language: system
         types: [python]
         pass_filenames: false

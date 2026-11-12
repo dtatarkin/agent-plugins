@@ -1,243 +1,453 @@
-#!/usr/bin/env bash
-# Fail a commit that would publish a name the private-names list holds.
-#
-#   check-private-names [PATH...]        staged paths and their content as staged
-#   check-private-names --message FILE   a commit message, as git will keep it
-#   check-private-names --history        every reachable commit, ref and tag
-#
-# The list is read from the file named by $AGENT_PLUGINS_PRIVATE_NAMES when it
-# is set and non-empty, and otherwise from ~/.config/agent-plugins/private-names.
-# One POSIX extended regular expression per line, matched case-sensitively;
-# lines starting with '#' and blank lines are ignored.
-#
-# Exit codes: 0 clean, 1 findings, 2 the guard cannot run (no usable list,
-# an invalid pattern, a git or grep error). Findings print the matched text,
-# so this guard runs only on a committer's machine, never in hosted CI.
-set -euo pipefail
+#!/usr/bin/env python3
+"""Fail a commit that would publish a name the private-names list holds.
 
+  check-private-names [PATH...]        staged paths and their content as staged
+  check-private-names --message FILE   a commit message, as git will keep it
+  check-private-names --history        every reachable commit, ref and tag
+
+The list is read from the file named by $AGENT_PLUGINS_PRIVATE_NAMES when it
+is set and non-empty, and otherwise from ~/.config/agent-plugins/private-names.
+One Python regular expression (`re` syntax) per line, matched
+case-sensitively; lines starting with '#' and blank lines are ignored. A line
+using a construct POSIX extended regular expressions read differently (a
+bracket expression such as [[:alpha:]], or \\< \\> \\` \\') is refused rather
+than matched with another meaning.
+
+Exit codes: 0 clean, 1 findings, 2 the guard cannot run (no usable list,
+an invalid or POSIX-only pattern, a git error). Findings print the matched
+text, so this guard runs only on a committer's machine, never in hosted CI.
+
+Standard library only: the hook must run, and fail closed, in a clone with no
+virtual environment.
+"""
+
+import os
+import re
+import subprocess
+import sys
+import warnings
+from collections.abc import Iterable, Sequence
+from pathlib import Path
+from typing import IO, NoReturn
+
+PROG = "check-private-names"
+
+if sys.version_info < (3, 12):  # noqa: UP036 - the guard runs on any python3 on PATH
+    sys.stderr.write(f"{PROG}: needs Python 3.12 or later on PATH as python3\n")
+    sys.exit(2)
+
+VARIABLE = "AGENT_PLUGINS_PRIVATE_NAMES"
 # The path as a committer reads it; it is displayed, never expanded.
-# shellcheck disable=SC2088
-readonly fallback_display='~/.config/agent-plugins/private-names'
-readonly scissors='# ------------------------ >8 ------------------------'
+FALLBACK_DISPLAY = "~/.config/agent-plugins/private-names"
+SCISSORS = "# ------------------------ >8 ------------------------"
+ENCODING = "utf-8"
+ERRORS = "surrogateescape"
 
-die() {
-	printf 'check-private-names: %s\n' "$1" >&2
-	exit 2
-}
+MODE_LINK = "120000"
+MODE_GITLINK = "160000"
+MODE_TREE = "40000"
 
-no_list() {
-	die "$1; give the list through AGENT_PLUGINS_PRIVATE_NAMES or ${fallback_display}"
-}
+# A match found on a line: its 1-based line number and the matched text.
+Hit = tuple[int, str]
+# A scan's result: whether anything matched (an empty match counts, as it did
+# for grep's exit status), and the non-empty matches, which are what is shown.
+Scan = tuple[bool, list[Hit]]
+# One file of a tree or the index: mode, path, object id.
+Entry = tuple[str, str, str]
 
-# The variable, when set, is the only source: a mis-set variable must not
-# silently fall through to another list.
-if [[ -n ${AGENT_PLUGINS_PRIVATE_NAMES:-} ]]; then
-	list=$AGENT_PLUGINS_PRIVATE_NAMES
-	[[ -f $list && -r $list ]] ||
-		no_list "AGENT_PLUGINS_PRIVATE_NAMES names '${list}', which is not a readable file"
-else
-	list="${HOME}/.config/agent-plugins/private-names"
-	[[ -f $list && -r $list ]] ||
-		no_list "AGENT_PLUGINS_PRIVATE_NAMES is unset and ${fallback_display} is not a readable file"
-fi
 
-# A function named grep (some interactive shells export one) must not
-# stand in for the real binary.
-unset -f grep 2>/dev/null || true
+def die(message: str) -> NoReturn:
+    sys.stdout.flush()
+    sys.stderr.write(f"{PROG}: {message}\n")
+    sys.exit(2)
 
-work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
-readonly patterns="${work}/patterns"
 
-# Drop comments and blank lines: a blank pattern would match every line.
-sed -e '/^#/d' -e '/^[[:space:]]*$/d' -- "$list" >"$patterns"
-[[ -s $patterns ]] || no_list "the list '${list}' holds no pattern"
+def no_list(message: str) -> NoReturn:
+    die(f"{message}; give the list through {VARIABLE} or {FALLBACK_DISPLAY}")
 
-# Compile the patterns once up front, so an invalid one stops the guard
-# instead of reading as "no match" later.
-rc=0
-grep -E -f "$patterns" </dev/null >/dev/null 2>&1 || rc=$?
-((rc < 2)) || no_list "the list '${list}' holds a pattern that is not a valid extended regular expression"
 
-found=0
+def decode(data: bytes) -> str:
+    return data.decode(ENCODING, ERRORS)
 
-# Read a grep or git grep status: 0 is a match, 1 none, anything else an error.
-status() {
-	case $1 in
-	0) found=1 ;;
-	1) ;;
-	*) die "$2 failed (exit $1)" ;;
-	esac
-}
 
-# Print each match of the patterns in stdin, one line per match, as "PREFIX MATCH".
-report_lines() {
-	local prefix=$1 rc=0 out
-	out=$(grep -a -n -o -E -f "$patterns") || rc=$?
-	status "$rc" grep
-	if ((rc == 0)); then
-		local line
-		while IFS= read -r line; do
-			printf '%s%s: %s\n' "$prefix" "${line%%:*}" "${line#*:}"
-		done <<<"$out"
-	fi
-}
+def readable_file(path: Path) -> bool:
+    return path.is_file() and os.access(path, os.R_OK)
 
-# Match a list of paths, one per line on stdin, printing "PREFIXpath: MATCH".
-report_paths() {
-	local prefix=$1 rc=0 hits
-	hits=$(grep -a -E -f "$patterns") || rc=$?
-	status "$rc" grep
-	if ((rc == 0)); then
-		local path match
-		while IFS= read -r path; do
-			while IFS= read -r match; do
-				printf '%s%s: path matches: %s\n' "$prefix" "$path" "$match"
-			done < <(printf '%s\n' "$path" | grep -a -o -E -f "$patterns" || true)
-		done <<<"$hits"
-	fi
-}
 
-# Read git grep -z -n -o output (path NUL line NUL match LF) and print
-# "PREFIXpath:line: match", dropping STRIP from the front of each path.
-format_git_grep() {
-	local prefix=$1 strip=$2 path line match
-	while IFS= read -r -d '' path && IFS= read -r -d '' line && IFS= read -r match; do
-		printf '%s%s:%s: %s\n' "$prefix" "${path#"$strip"}" "$line" "$match"
-	done
-}
+# --- The list ---------------------------------------------------------------
 
-# Content of the given tree-ish (or the index, with --cached), restricted to
-# the given pathspecs. git grep does not read a symbolic link's blob, so the
-# link targets are matched separately by the caller.
-grep_content() {
-	local prefix=$1 strip=$2 rc=0
-	shift 2
-	# To a file, not a variable: the output is NUL-separated.
-	git -c grep.column=false --literal-pathspecs grep -z -n -o -E --text \
-		-f "$patterns" "$@" >"${work}/grep" || rc=$?
-	status "$rc" 'git grep'
-	if ((rc == 0)); then
-		format_git_grep "$prefix" "$strip" <"${work}/grep"
-	fi
-}
+BLANK = re.compile(r"[ \t\n\r\f\v]*")
 
-# Match one symbolic link's target, read from its blob.
-grep_link() {
-	local prefix=$1 path=$2 blob=$3 rc=0 out
-	out=$(git cat-file blob "$blob" | grep -a -o -E -f "$patterns") || rc=$?
-	status "$rc" grep
-	if ((rc == 0)); then
-		local match
-		while IFS= read -r match; do
-			printf '%s%s: link target matches: %s\n' "$prefix" "$path" "$match"
-		done <<<"$out"
-	fi
-}
 
-# Symbolic links among NUL-separated "mode SP type-or-object ... TAB path"
-# records (ls-files -s and ls-tree -r share the mode-first, tab-path shape).
-grep_links() {
-	local prefix=$1 record meta path
-	while IFS= read -r -d '' record; do
-		meta=${record%%$'\t'*}
-		path=${record#*$'\t'}
-		[[ $meta == 120000\ * ]] || continue
-		# ls-files -s: "mode object stage"; ls-tree: "mode type object".
-		local -a fields
-		read -r -a fields <<<"$meta"
-		if [[ ${fields[1]} == blob ]]; then
-			grep_link "$prefix" "$path" "${fields[2]}"
-		else
-			grep_link "$prefix" "$path" "${fields[1]}"
-		fi
-	done
-}
+def posix_only(pattern: str) -> str | None:
+    """Name a construct POSIX ERE reads differently from Python, if any."""
+    i, n = 0, len(pattern)
+    while i < n:
+        char = pattern[i]
+        if char == "\\":
+            escaped = pattern[i + 1 : i + 2]
+            if escaped in ("<", ">"):
+                return "a GNU word-boundary escape"
+            if escaped in ("`", "'"):
+                return "a GNU buffer-anchor escape"
+            i += 2
+        elif char == "[":
+            i += 1
+            if pattern[i : i + 1] == "^":
+                i += 1
+            if pattern[i : i + 1] == "]":
+                i += 1
+            while i < n and pattern[i] != "]":
+                if pattern[i] == "\\":
+                    i += 2
+                    continue
+                if pattern[i] == "[" and pattern[i + 1 : i + 2] in (":", ".", "="):
+                    return "a POSIX bracket expression"
+                i += 1
+            i += 1
+        else:
+            i += 1
+    return None
 
-staged() {
-	(($# > 0)) || return 0
-	printf '%s\n' "$@" >"${work}/paths"
-	report_paths '' <"${work}/paths"
-	grep_content '' '' --cached -- "$@"
-	git --literal-pathspecs ls-files -s -z -- "$@" >"${work}/index" ||
-		die 'git ls-files failed'
-	grep_links '' <"${work}/index"
-}
 
-message() {
-	local file=$1
-	[[ -f $file && -r $file ]] || die "cannot read the commit message file '${file}'"
-	# Keep what git keeps: stop at the scissors line, drop '#' comment lines.
-	# Each kept line is prefixed with its original number, then matched alone.
-	awk -v scissors="$scissors" '
-		$0 == scissors { exit }
-		/^#/ { next }
-		{ print NR "\t" $0 }
-	' "$file" >"${work}/message" || die 'cannot read the commit message'
-	local num text rc out match
-	while IFS=$'\t' read -r num text; do
-		rc=0
-		out=$(printf '%s\n' "$text" | grep -a -o -E -f "$patterns") || rc=$?
-		status "$rc" grep
-		if ((rc == 0)); then
-			while IFS= read -r match; do
-				printf 'commit message:%s: %s\n' "$num" "$match"
-			done <<<"$out"
-		fi
-	done <"${work}/message"
-}
+def compile_pattern(pattern: str) -> re.Pattern[str]:
+    # A FutureWarning about a possible nested set would only add noise.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return re.compile(pattern)
 
-history() {
-	git rev-list --all >"${work}/commits" || die 'git rev-list failed'
-	local commit
-	while IFS= read -r commit; do
-		grep_content "${commit}: " "${commit}:" "$commit"
-		git ls-tree -r -z "$commit" >"${work}/tree" || die "git ls-tree ${commit} failed"
-		# Paths: the part after the tab of each record, one per line.
-		tr '\0' '\n' <"${work}/tree" | awk '{ sub(/^[^\t]*\t/, ""); print }' >"${work}/tree-paths"
-		report_paths "${commit}: " <"${work}/tree-paths"
-		grep_links "${commit}: " <"${work}/tree"
-		git log -1 --format='author %an <%ae>%ncommitter %cn <%ce>%n%B' "$commit" \
-			>"${work}/log" || die "git log ${commit} failed"
-		report_lines "${commit}: identity and message line " <"${work}/log"
-	done <"${work}/commits"
 
-	git for-each-ref --format='%(refname)' >"${work}/refs" || die 'git for-each-ref failed'
-	report_paths 'ref ' <"${work}/refs"
+def load_list() -> re.Pattern[str]:
+    # The variable, when set, is the only source: a mis-set variable must not
+    # silently fall through to another list.
+    named = os.environ.get(VARIABLE, "")
+    if named:
+        path = Path(named)
+        if not readable_file(path):
+            no_list(f"{VARIABLE} names '{named}', which is not a readable file")
+    else:
+        path = Path.home() / ".config" / "agent-plugins" / "private-names"
+        if not readable_file(path):
+            no_list(f"{VARIABLE} is unset and {FALLBACK_DISPLAY} is not a readable file")
 
-	git for-each-ref refs/tags \
-		--format='%(if:equals=tag)%(objecttype)%(then)%(refname)%(end)' \
-		>"${work}/tags" || die 'git for-each-ref failed'
-	local tag
-	while IFS= read -r tag; do
-		[[ -n $tag ]] || continue
-		git cat-file tag "$tag" >"${work}/tag" || die "git cat-file ${tag} failed"
-		report_lines "${tag}: tag object line " <"${work}/tag"
-	done <"${work}/tags"
-}
+    try:
+        text = decode(path.read_bytes())
+    except OSError:
+        no_list(f"the list '{path}' cannot be read")
 
-case ${1:-} in
---message)
-	(($# == 2)) || die 'usage: check-private-names --message FILE'
-	message "$2"
-	;;
---history)
-	(($# == 1)) || die 'usage: check-private-names --history'
-	history
-	;;
---)
-	shift
-	staged "$@"
-	;;
--*)
-	die "unknown option '$1'"
-	;;
-*)
-	staged "$@"
-	;;
-esac
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    # Drop comments and blank lines: a blank pattern would match every line.
+    patterns = [
+        (number, line)
+        for number, line in enumerate(lines, 1)
+        if not line.startswith("#") and not BLANK.fullmatch(line)
+    ]
+    if not patterns:
+        no_list(f"the list '{path}' holds no pattern")
 
-if ((found)); then
-	printf 'check-private-names: the list matched; nothing above may be committed\n' >&2
-	exit 1
-fi
+    # Each line is checked alone, so the message can name it; never its text.
+    for number, line in patterns:
+        kind = posix_only(line)
+        if kind is not None:
+            no_list(
+                f"the list '{path}' line {number} uses {kind}, which is POSIX-only;"
+                " rewrite it as a Python regular expression"
+            )
+        try:
+            compile_pattern(line)
+        except re.error:
+            no_list(f"the list '{path}' line {number} is not a valid Python regular expression")
+    try:
+        return compile_pattern("|".join(f"(?:{line})" for _, line in patterns))
+    except re.error:
+        no_list(f"the list '{path}' holds patterns that cannot be combined into one expression")
+
+
+# --- Matching and reporting -------------------------------------------------
+
+
+class Report:
+    def __init__(self, patterns: re.Pattern[str]) -> None:
+        self.patterns = patterns
+        self.found = False
+        self.out: IO[bytes] = sys.stdout.buffer
+
+    def scan(self, text: str) -> Scan:
+        """Match every line of TEXT, as grep -a -o -n did."""
+        lines = text.split("\n")
+        if lines and lines[-1] == "":
+            lines.pop()
+        hit = False
+        hits: list[Hit] = []
+        for number, line in enumerate(lines, 1):
+            for match in self.patterns.finditer(line):
+                hit = True
+                if match.group():
+                    hits.append((number, match.group()))
+        return hit, hits
+
+    def emit(self, line: str) -> None:
+        self.out.write(line.encode(ENCODING, ERRORS) + b"\n")
+
+    def note(self, scan: Scan, lines: Iterable[str]) -> None:
+        if scan[0]:
+            self.found = True
+        for line in lines:
+            self.emit(line)
+
+    def paths(self, prefix: str, paths: Iterable[str]) -> None:
+        for path in paths:
+            scan = self.scan(path)
+            self.note(scan, (f"{prefix}{path}: path matches: {m}" for _, m in scan[1]))
+
+    def lines(self, prefix: str, text: str) -> None:
+        """Print each match as "PREFIX LINE: MATCH"."""
+        scan = self.scan(text)
+        self.note(scan, (f"{prefix}{n}: {m}" for n, m in scan[1]))
+
+
+# --- Git --------------------------------------------------------------------
+
+
+def git(*args: str, what: str) -> bytes:
+    try:
+        done = subprocess.run(["git", *args], stdout=subprocess.PIPE, check=False)
+    except OSError:
+        die(f"{what} failed (git cannot be run)")
+    if done.returncode != 0:
+        die(f"{what} failed (exit {done.returncode})")
+    return done.stdout
+
+
+class Objects:
+    """One `git cat-file --batch` process serving every object read."""
+
+    def __init__(self) -> None:
+        try:
+            self.proc = subprocess.Popen(
+                ["git", "cat-file", "--batch"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+            )
+        except OSError:
+            die("git cat-file failed (git cannot be run)")
+        assert self.proc.stdin is not None and self.proc.stdout is not None  # noqa: S101
+        self.stdin = self.proc.stdin
+        self.stdout = self.proc.stdout
+        self.blobs: dict[str, str] = {}
+
+    def read(self, name: str, kind: str) -> bytes:
+        try:
+            self.stdin.write(name.encode(ENCODING, ERRORS) + b"\n")
+            self.stdin.flush()
+            header = self.stdout.readline().split()
+        except OSError:
+            die("git cat-file failed")
+        if len(header) != 3 or header[1].decode() != kind:
+            die(f"git cat-file failed to read a {kind}")
+        size = int(header[2])
+        data = self.stdout.read(size + 1)
+        if len(data) != size + 1:
+            die("git cat-file failed")
+        return data[:size]
+
+    def text(self, oid: str) -> str:
+        return decode(self.read(oid, "blob"))
+
+    def close(self) -> None:
+        self.stdin.close()
+        self.proc.wait()
+
+
+def entries_after_tab(records: bytes) -> list[Entry]:
+    """Parse NUL-separated "mode object stage TAB path" (ls-files -s) records."""
+    entries: list[Entry] = []
+    for record in records.split(b"\0"):
+        if not record:
+            continue
+        meta, _, path = record.partition(b"\t")
+        fields = meta.split()
+        entries.append((fields[0].decode(), decode(path), fields[1].decode()))
+    return entries
+
+
+# --- Modes ------------------------------------------------------------------
+
+
+def staged(report: Report, paths: Sequence[str]) -> None:
+    if not paths:
+        return
+    report.paths("", paths)
+    index = entries_after_tab(
+        git("--literal-pathspecs", "ls-files", "-s", "-z", "--", *paths, what="git ls-files")
+    )
+    objects = Objects()
+    # git grep reads neither a symbolic link's blob nor a submodule; the link
+    # target is matched separately, after the content.
+    for mode, path, oid in index:
+        if mode in (MODE_LINK, MODE_GITLINK):
+            continue
+        scan = report.scan(objects.text(oid))
+        report.note(scan, (f"{path}:{n}: {m}" for n, m in scan[1]))
+    for mode, path, oid in index:
+        if mode == MODE_LINK:
+            scan = report.scan(objects.text(oid))
+            report.note(scan, (f"{path}: link target matches: {m}" for _, m in scan[1]))
+    objects.close()
+
+
+def message(report: Report, file: str) -> None:
+    path = Path(file)
+    if not readable_file(path):
+        die(f"cannot read the commit message file '{file}'")
+    try:
+        text = decode(path.read_bytes())
+    except OSError:
+        die("cannot read the commit message")
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    # Keep what git keeps: stop at the scissors line, drop '#' comment lines.
+    # Each kept line is matched alone and reported under its original number.
+    for number, line in enumerate(lines, 1):
+        if line == SCISSORS:
+            break
+        if line.startswith("#"):
+            continue
+        scan = report.scan(line)
+        report.note(scan, (f"commit message:{number}: {m}" for _, m in scan[1]))
+
+
+class History:
+    def __init__(self, report: Report) -> None:
+        self.report = report
+        self.objects = Objects()
+        object_format = git("rev-parse", "--show-object-format", what="git rev-parse").strip()
+        self.hash_bytes = 32 if object_format == b"sha256" else 20
+        # Every cache is keyed by object id: a blob or tree shared by many
+        # commits is read and matched once.
+        self.subtrees: dict[str, list[Entry]] = {}
+        self.blob_scans: dict[str, Scan] = {}
+        self.tree_lines: dict[str, tuple[bool, list[str]]] = {}
+
+    def flatten(self, tree: str) -> list[Entry]:
+        """The recursive listing of TREE, in `git ls-tree -r` order."""
+        cached = self.subtrees.get(tree)
+        if cached is not None:
+            return cached
+        data = self.objects.read(tree, "tree")
+        entries: list[Entry] = []
+        pos = 0
+        while pos < len(data):
+            space = data.index(b" ", pos)
+            nul = data.index(b"\0", space)
+            mode = data[pos:space].decode()
+            name = decode(data[space + 1 : nul])
+            oid = data[nul + 1 : nul + 1 + self.hash_bytes].hex()
+            pos = nul + 1 + self.hash_bytes
+            if mode == MODE_TREE:
+                entries.extend((m, f"{name}/{p}", o) for m, p, o in self.flatten(oid))
+            else:
+                entries.append((mode, name, oid))
+        self.subtrees[tree] = entries
+        return entries
+
+    def blob(self, oid: str) -> Scan:
+        cached = self.blob_scans.get(oid)
+        if cached is None:
+            cached = self.report.scan(self.objects.text(oid))
+            self.blob_scans[oid] = cached
+        return cached
+
+    def tree(self, tree: str) -> tuple[bool, list[str]]:
+        """A tree's findings without the commit prefix: content, paths, links."""
+        cached = self.tree_lines.get(tree)
+        if cached is not None:
+            return cached
+        entries = self.flatten(tree)
+        hit = False
+        lines: list[str] = []
+        for mode, path, oid in entries:
+            if mode in (MODE_LINK, MODE_GITLINK):
+                continue
+            scan = self.blob(oid)
+            hit = hit or scan[0]
+            lines.extend(f"{path}:{n}: {m}" for n, m in scan[1])
+        for _, path, _ in entries:
+            scan = self.report.scan(path)
+            hit = hit or scan[0]
+            lines.extend(f"{path}: path matches: {m}" for _, m in scan[1])
+        for mode, path, oid in entries:
+            if mode == MODE_LINK:
+                scan = self.blob(oid)
+                hit = hit or scan[0]
+                lines.extend(f"{path}: link target matches: {m}" for _, m in scan[1])
+        self.tree_lines[tree] = (hit, lines)
+        return hit, lines
+
+    def run(self) -> None:
+        report = self.report
+        # One walk for every commit: id, tree, then the block the identities
+        # and message are matched in, numbered from its "author" line.
+        log = git(
+            "log",
+            "--all",
+            "-z",
+            "--format=tformat:%H %T%nauthor %an <%ae>%ncommitter %cn <%ce>%n%B",
+            what="git log",
+        )
+        for record in log.split(b"\0"):
+            if not record:
+                continue
+            head, _, block = decode(record).partition("\n")
+            commit, _, tree = head.partition(" ")
+            hit, lines = self.tree(tree)
+            report.note((hit, []), (f"{commit}: {line}" for line in lines))
+            report.lines(f"{commit}: identity and message line ", block)
+
+        refs = decode(git("for-each-ref", "--format=%(refname)", what="git for-each-ref"))
+        report.paths("ref ", refs.splitlines())
+
+        tags = decode(
+            git(
+                "for-each-ref",
+                "refs/tags",
+                "--format=%(if:equals=tag)%(objecttype)%(then)%(refname)%(end)",
+                what="git for-each-ref",
+            )
+        )
+        for tag in tags.splitlines():
+            if tag:
+                report.lines(f"{tag}: tag object line ", decode(self.objects.read(tag, "tag")))
+        self.objects.close()
+
+
+def main(argv: Sequence[str]) -> int:
+    report = Report(load_list())
+    first = argv[0] if argv else ""
+    if first == "--message":
+        if len(argv) != 2:
+            die("usage: check-private-names --message FILE")
+        message(report, argv[1])
+    elif first == "--history":
+        if len(argv) != 1:
+            die("usage: check-private-names --history")
+        History(report).run()
+    elif first == "--":
+        staged(report, argv[1:])
+    elif first.startswith("-"):
+        die(f"unknown option '{first}'")
+    else:
+        staged(report, argv)
+
+    sys.stdout.flush()
+    if report.found:
+        sys.stderr.write(f"{PROG}: the list matched; nothing above may be committed\n")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
