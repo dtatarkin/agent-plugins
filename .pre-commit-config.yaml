@@ -43,9 +43,9 @@ repos:
       # itself needs no environment; its test runs through the lockfile.
       - id: check-private-names-selftest
         name: check-private-names (self-test)
-        entry: uv run pytest -q tests/test_check_private_names.py
+        entry: uv run pytest -q tests/scripts/test_check_private_names.py
         language: system
-        files: ^(scripts/check-private-names|tests/test_check_private_names\.py)$
+        files: ^(scripts/check-private-names|tests/(scripts/test_|fixtures/scripts/)check_private_names\.py)$
         pass_filenames: false
 
   # Baseline: file hygiene.

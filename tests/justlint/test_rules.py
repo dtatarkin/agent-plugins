@@ -80,39 +80,45 @@ def _rules(tree: Path, name: str = "justfile") -> list[str]:
 
 class TestRuleChecks:
     @pytest.mark.parametrize("rule", list(CASES))
-    def test_violation_is_reported(self, rule: RuleId, justfile_tree: Callable[..., Path]) -> None:
-        tree = justfile_tree({"justfile": CASES[rule][0]})
+    def test_violation_is_reported(
+        self, rule: RuleId, justfile_tree_builder: Callable[..., Path]
+    ) -> None:
+        tree = justfile_tree_builder({"justfile": CASES[rule][0]})
         assert _rules(tree) == [rule.value]
 
     @pytest.mark.parametrize("rule", list(CASES))
     def test_compliant_file_is_silent(
-        self, rule: RuleId, justfile_tree: Callable[..., Path]
+        self, rule: RuleId, justfile_tree_builder: Callable[..., Path]
     ) -> None:
-        tree = justfile_tree({"justfile": CASES[rule][1]})
+        tree = justfile_tree_builder({"justfile": CASES[rule][1]})
         assert _rules(tree) == []
 
     @pytest.mark.parametrize("direction", list(PRIVATE_PREFIX_CASES))
     def test_both_directions_of_private_prefix(
-        self, direction: str, justfile_tree: Callable[..., Path]
+        self, direction: str, justfile_tree_builder: Callable[..., Path]
     ) -> None:
-        tree = justfile_tree({"justfile": PRIVATE_PREFIX_CASES[direction]})
+        tree = justfile_tree_builder({"justfile": PRIVATE_PREFIX_CASES[direction]})
         assert _rules(tree) == [RuleId.PRIVATE_PREFIX.value]
 
-    def test_a_paired_private_recipe_is_silent(self, justfile_tree: Callable[..., Path]) -> None:
-        tree = justfile_tree({"justfile": "[private]\n_run:\n    echo hi\n"})
+    def test_a_paired_private_recipe_is_silent(
+        self, justfile_tree_builder: Callable[..., Path]
+    ) -> None:
+        tree = justfile_tree_builder({"justfile": "[private]\n_run:\n    echo hi\n"})
         assert _rules(tree) == []
 
     def test_a_module_without_the_preamble_is_reported(
-        self, justfile_tree: Callable[..., Path]
+        self, justfile_tree_builder: Callable[..., Path]
     ) -> None:
-        tree = justfile_tree(
+        tree = justfile_tree_builder(
             {"justfile": "mod tools 'tools.just'\n", "tools.just": MODULE_WITHOUT_PREAMBLE}
         )
         findings = file_findings(tree / "tools.just")
         assert [(f.subject, f.rule.value) for f in findings] == [("", "module-preamble")]
 
-    def test_a_module_with_the_preamble_is_silent(self, justfile_tree: Callable[..., Path]) -> None:
-        tree = justfile_tree(
+    def test_a_module_with_the_preamble_is_silent(
+        self, justfile_tree_builder: Callable[..., Path]
+    ) -> None:
+        tree = justfile_tree_builder(
             {"justfile": "mod tools 'tools.just'\n", "tools.just": MODULE_WITH_PREAMBLE}
         )
         assert _rules(tree, "tools.just") == []
@@ -120,45 +126,45 @@ class TestRuleChecks:
 
 class TestNestedShellExemption:
     def test_a_splat_inside_a_foreach_string_is_exempt(
-        self, justfile_tree: Callable[..., Path]
+        self, justfile_tree_builder: Callable[..., Path]
     ) -> None:
-        tree = justfile_tree({"justfile": FOREACH_EXEMPT})
+        tree = justfile_tree_builder({"justfile": FOREACH_EXEMPT})
         assert _rules(tree) == []
 
     def test_a_splat_outside_the_quotes_is_reported(
-        self, justfile_tree: Callable[..., Path]
+        self, justfile_tree_builder: Callable[..., Path]
     ) -> None:
-        tree = justfile_tree({"justfile": FOREACH_OUTSIDE_QUOTES})
+        tree = justfile_tree_builder({"justfile": FOREACH_OUTSIDE_QUOTES})
         assert _rules(tree) == [RuleId.SPLAT.value]
 
     def test_a_splat_inside_a_single_quoted_sops_string_is_exempt(
-        self, justfile_tree: Callable[..., Path]
+        self, justfile_tree_builder: Callable[..., Path]
     ) -> None:
-        tree = justfile_tree({"justfile": SOPS_EXEMPT})
+        tree = justfile_tree_builder({"justfile": SOPS_EXEMPT})
         assert _rules(tree) == []
 
     def test_a_splat_outside_the_sops_quotes_is_reported(
-        self, justfile_tree: Callable[..., Path]
+        self, justfile_tree_builder: Callable[..., Path]
     ) -> None:
-        tree = justfile_tree({"justfile": SOPS_OUTSIDE_QUOTES})
+        tree = justfile_tree_builder({"justfile": SOPS_OUTSIDE_QUOTES})
         assert _rules(tree) == [RuleId.SPLAT.value]
 
 
 class TestFindingShape:
     def test_a_finding_names_recipe_rule_fix_and_topic(
-        self, justfile_tree: Callable[..., Path]
+        self, justfile_tree_builder: Callable[..., Path]
     ) -> None:
         from agent_plugins.justlint.report import render_audit
 
-        tree = justfile_tree({"justfile": CASES[RuleId.SPLAT][0]})
+        tree = justfile_tree_builder({"justfile": CASES[RuleId.SPLAT][0]})
         line = render_audit(file_findings(tree / "justfile"), tree).splitlines()[1]
         assert "run" in line
         assert "splat" in line
         assert "[positional-arguments]" in line
         assert "(skills/just/references/arguments.md)" in line
 
-    def test_formatting_is_not_checked(self, justfile_tree: Callable[..., Path]) -> None:
+    def test_formatting_is_not_checked(self, justfile_tree_builder: Callable[..., Path]) -> None:
         # Two spaces of indent and no blank line: `just --fmt` would rewrite
         # this, and the checker must still find nothing.
-        tree = justfile_tree({"justfile": '[doc("Run it")]\nrun:\n  echo hi\n'})
+        tree = justfile_tree_builder({"justfile": '[doc("Run it")]\nrun:\n  echo hi\n'})
         assert _rules(tree) == []

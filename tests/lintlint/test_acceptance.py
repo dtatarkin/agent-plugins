@@ -9,5 +9,6 @@ from agent_plugins.lintlint.rules import audit
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_this_repository_audits_clean() -> None:
-    assert audit(REPO_ROOT) == []
+class TestThisRepository:
+    def test_this_repository_audits_clean(self) -> None:
+        assert audit(REPO_ROOT) == []

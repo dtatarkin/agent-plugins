@@ -1,7 +1,11 @@
 """Justfile trees to check, and the hook state the ratchet keeps beside them.
 
-Two builders: `justfile_tree` writes a tree from a mapping, and `data_tree`
-copies one of the committed trees under `tests/justlint/data/`.
+Two builders: `justfile_tree_builder` writes a tree from a mapping, and
+`data_tree_builder` copies one of the committed trees under
+`tests/justlint/data/`. Their concrete forms are an empty repository
+(`justfile_tree`) and the `compliant` tree (`data_tree`). `hook_builder` has no
+concrete form: every call names the event it feeds, so there is no default
+answer to hand a test.
 
 A committed tree is written in disguise and restored on copy, for two reasons.
 Git will not track a path named `.git`, so a nested repository is marked with
@@ -30,12 +34,13 @@ NESTED_REPO_MARKER = "NESTED_REPO"
 DOTFILE_PREFIX = "dot"
 FIXTURE_SUFFIX = ".fixture"
 
-# The key that asks `justfile_tree` for a repository boundary in a directory.
+# The key that asks `justfile_tree_builder` for a repository boundary in a
+# directory.
 REPO_KEY = ".git"
 
 
 @pytest.fixture
-def justfile_tree(tmp_path: Path) -> Callable[..., Path]:
+def justfile_tree_builder(tmp_path: Path) -> Callable[..., Path]:
     """Write a tree of files under a fresh directory and return its root.
 
     A key ending in `.git` becomes a repository boundary rather than a file,
@@ -60,7 +65,13 @@ def justfile_tree(tmp_path: Path) -> Callable[..., Path]:
 
 
 @pytest.fixture
-def data_tree(tmp_path: Path) -> Callable[[str], Path]:
+def justfile_tree(justfile_tree_builder: Callable[..., Path]) -> Path:
+    """An empty repository."""
+    return justfile_tree_builder({})
+
+
+@pytest.fixture
+def data_tree_builder(tmp_path: Path) -> Callable[[str], Path]:
     """Copy a committed tree from `tests/justlint/data/` and undo its disguise:
     a `NESTED_REPO` marker becomes a repository of its own, a `.fixture` suffix
     comes off, and `dot.just` becomes the `.just` dotfile.
@@ -84,6 +95,12 @@ def data_tree(tmp_path: Path) -> Callable[[str], Path]:
 
 
 @pytest.fixture
+def data_tree(data_tree_builder: Callable[[str], Path]) -> Path:
+    """The committed `compliant` tree."""
+    return data_tree_builder("compliant")
+
+
+@pytest.fixture
 def plugin_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Point the ratchet's state at a directory of this test's own."""
     root = tmp_path / "plugin-data"
@@ -92,7 +109,7 @@ def plugin_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 @pytest.fixture
-def hook(
+def hook_builder(
     plugin_data: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],

@@ -28,23 +28,23 @@ def _age(path: Path, days: float) -> None:
 class TestPruning:
     def test_fresh_state_is_spared(
         self,
-        justfile_tree: Callable[..., Path],
-        hook: Callable[..., JsonObject | None],
+        justfile_tree_builder: Callable[..., Path],
+        hook_builder: Callable[..., JsonObject | None],
         plugin_data: Path,
     ) -> None:
-        tree = justfile_tree({"justfile": LEGACY})
-        hook("PreToolUse", path=tree / "justfile")
+        tree = justfile_tree_builder({"justfile": LEGACY})
+        hook_builder("PreToolUse", path=tree / "justfile")
         prune(state_root())
         assert LintState.for_context("session-1", None).baseline(tree / "justfile") is not None
 
     def test_state_untouched_for_a_week_is_dropped(
         self,
-        justfile_tree: Callable[..., Path],
-        hook: Callable[..., JsonObject | None],
+        justfile_tree_builder: Callable[..., Path],
+        hook_builder: Callable[..., JsonObject | None],
         plugin_data: Path,
     ) -> None:
-        tree = justfile_tree({"justfile": LEGACY})
-        hook("PreToolUse", path=tree / "justfile")
+        tree = justfile_tree_builder({"justfile": LEGACY})
+        hook_builder("PreToolUse", path=tree / "justfile")
         _age(plugin_data, PRUNE_AFTER.days + 1)
         prune(state_root())
         assert LintState.for_context("session-1", None).baseline(tree / "justfile") is None
@@ -52,31 +52,31 @@ class TestPruning:
 
     def test_a_stop_prunes_but_spares_this_turn(
         self,
-        justfile_tree: Callable[..., Path],
-        hook: Callable[..., JsonObject | None],
+        justfile_tree_builder: Callable[..., Path],
+        hook_builder: Callable[..., JsonObject | None],
         plugin_data: Path,
     ) -> None:
-        tree = justfile_tree({"justfile": LEGACY})
+        tree = justfile_tree_builder({"justfile": LEGACY})
         path = tree / "justfile"
-        hook("PreToolUse", path=path)
+        hook_builder("PreToolUse", path=path)
         path.write_text(FIRST_EDIT)
         # An old context of another session, beside this turn's fresh one.
         stale = LintState.for_context("session-old", None)
         stale.record_baseline(tree / "other", set())
         _age(stale.directory, PRUNE_AFTER.days + 1)
-        answer = hook("Stop", cwd=tree)
+        answer = hook_builder("Stop", cwd=tree)
         assert answer is not None and answer["decision"] == "block"
         assert not stale.directory.exists()
 
     def test_a_session_ending_prunes_nothing(
         self,
-        justfile_tree: Callable[..., Path],
-        hook: Callable[..., JsonObject | None],
+        justfile_tree_builder: Callable[..., Path],
+        hook_builder: Callable[..., JsonObject | None],
         plugin_data: Path,
     ) -> None:
-        tree = justfile_tree({"justfile": LEGACY})
-        hook("PreToolUse", path=tree / "justfile")
-        hook("SessionEnd", cwd=tree)
+        tree = justfile_tree_builder({"justfile": LEGACY})
+        hook_builder("PreToolUse", path=tree / "justfile")
+        hook_builder("SessionEnd", cwd=tree)
         assert LintState.for_context("session-1", None).baseline(tree / "justfile") is not None
 
 

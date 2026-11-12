@@ -28,23 +28,23 @@ def _age(path: Path, days: float) -> None:
 class TestPruning:
     def test_fresh_state_is_spared(
         self,
-        lint_data_tree: Callable[[str], Path],
-        lint_hook: Callable[..., JsonObject | None],
+        lint_data_tree_builder: Callable[[str], Path],
+        lint_hook_builder: Callable[..., JsonObject | None],
         plugin_data: Path,
     ) -> None:
-        tree = lint_data_tree("compliant")
-        lint_hook("PreToolUse", path=tree / CONFIG)
+        tree = lint_data_tree_builder("compliant")
+        lint_hook_builder("PreToolUse", path=tree / CONFIG)
         prune(state_root())
         assert LintState.for_context("session-1", None).baseline(tree / CONFIG) is not None
 
     def test_state_untouched_for_a_week_is_dropped(
         self,
-        lint_data_tree: Callable[[str], Path],
-        lint_hook: Callable[..., JsonObject | None],
+        lint_data_tree_builder: Callable[[str], Path],
+        lint_hook_builder: Callable[..., JsonObject | None],
         plugin_data: Path,
     ) -> None:
-        tree = lint_data_tree("compliant")
-        lint_hook("PreToolUse", path=tree / CONFIG)
+        tree = lint_data_tree_builder("compliant")
+        lint_hook_builder("PreToolUse", path=tree / CONFIG)
         _age(plugin_data, PRUNE_AFTER.days + 1)
         prune(state_root())
         assert LintState.for_context("session-1", None).baseline(tree / CONFIG) is None
@@ -52,31 +52,31 @@ class TestPruning:
 
     def test_a_stop_prunes_but_spares_this_turn(
         self,
-        lint_data_tree: Callable[[str], Path],
-        lint_hook: Callable[..., JsonObject | None],
+        lint_data_tree_builder: Callable[[str], Path],
+        lint_hook_builder: Callable[..., JsonObject | None],
         plugin_data: Path,
     ) -> None:
-        tree = lint_data_tree("compliant")
+        tree = lint_data_tree_builder("compliant")
         path = tree / CONFIG
-        lint_hook("PreToolUse", path=path)
+        lint_hook_builder("PreToolUse", path=path)
         path.write_text(path.read_text().replace("args: [--strict]", "args: []"))
         # An old context of another session, beside this turn's fresh one.
         stale = LintState.for_context("session-old", None)
         stale.record_baseline(tree / "other", set())
         _age(stale.directory, PRUNE_AFTER.days + 1)
-        answer = lint_hook("Stop", cwd=tree)
+        answer = lint_hook_builder("Stop", cwd=tree)
         assert answer is not None and answer["decision"] == "block"
         assert not stale.directory.exists()
 
     def test_a_session_ending_prunes_nothing(
         self,
-        lint_data_tree: Callable[[str], Path],
-        lint_hook: Callable[..., JsonObject | None],
+        lint_data_tree_builder: Callable[[str], Path],
+        lint_hook_builder: Callable[..., JsonObject | None],
         plugin_data: Path,
     ) -> None:
-        tree = lint_data_tree("compliant")
-        lint_hook("PreToolUse", path=tree / CONFIG)
-        lint_hook("SessionEnd", cwd=tree)
+        tree = lint_data_tree_builder("compliant")
+        lint_hook_builder("PreToolUse", path=tree / CONFIG)
+        lint_hook_builder("SessionEnd", cwd=tree)
         assert LintState.for_context("session-1", None).baseline(tree / CONFIG) is not None
 
 

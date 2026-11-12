@@ -156,23 +156,29 @@ repos:
 
 
 class TestAudit:
-    def test_a_converged_repository_exits_zero_and_says_nothing(self, lint_data_tree: Tree) -> None:
-        result = CliRunner().invoke(app, ["check", str(lint_data_tree("compliant"))])
+    def test_a_converged_repository_exits_zero_and_says_nothing(
+        self, lint_data_tree_builder: Tree
+    ) -> None:
+        result = CliRunner().invoke(app, ["check", str(lint_data_tree_builder("compliant"))])
         assert result.exit_code == 0
         assert result.stdout == ""
 
-    def test_a_drifted_repository_names_every_planted_finding(self, lint_data_tree: Tree) -> None:
-        assert {(f.subject, f.rule.value) for f in audit(lint_data_tree("drifted"))} == DRIFTED
+    def test_a_drifted_repository_names_every_planted_finding(
+        self, lint_data_tree_builder: Tree
+    ) -> None:
+        assert {
+            (f.subject, f.rule.value) for f in audit(lint_data_tree_builder("drifted"))
+        } == DRIFTED
 
-    def test_a_drifted_repository_exits_one(self, lint_data_tree: Tree) -> None:
-        result = CliRunner().invoke(app, ["check", str(lint_data_tree("drifted"))])
+    def test_a_drifted_repository_exits_one(self, lint_data_tree_builder: Tree) -> None:
+        result = CliRunner().invoke(app, ["check", str(lint_data_tree_builder("drifted"))])
         assert result.exit_code == 1
         assert "finding(s) in 5 file(s)" in result.stdout
 
     def test_a_report_line_names_the_file_subject_rule_fix_and_topic(
-        self, lint_data_tree: Tree
+        self, lint_data_tree_builder: Tree
     ) -> None:
-        result = CliRunner().invoke(app, ["check", str(lint_data_tree("drifted"))])
+        result = CliRunner().invoke(app, ["check", str(lint_data_tree_builder("drifted"))])
         assert ".pre-commit-config.yaml  [" in result.stdout
         assert (
             "    uv-lock  missing-hook: add the house entry  (skills/lint/references/python.md)"
@@ -180,18 +186,18 @@ class TestAudit:
         )
 
     def test_a_lockless_repository_is_told_the_runner_form_is_out(
-        self, lint_data_tree: Tree
+        self, lint_data_tree_builder: Tree
     ) -> None:
-        tree = lint_data_tree("lockless")
+        tree = lint_data_tree_builder("lockless")
         assert {(f.subject, f.rule.value) for f in audit(tree)} == {
             ("uv-lock", "stray-hook"),
             ("mypy", "hook-form"),
         }
 
     def test_no_configuration_is_one_finding_and_the_linter_files(
-        self, lint_tree: Callable[..., Path]
+        self, lint_tree_builder: Callable[..., Path]
     ) -> None:
-        tree = lint_tree({"README.md": "# A\n"})
+        tree = lint_tree_builder({"README.md": "# A\n"})
         result = CliRunner().invoke(app, ["check", str(tree)])
         assert result.exit_code == 1
         assert {(f.source.name, f.rule.value) for f in audit(tree)} == {
@@ -201,39 +207,43 @@ class TestAudit:
         }
 
     def test_a_directory_outside_any_repository_exits_two(
-        self, lint_tree: Callable[..., Path]
+        self, lint_tree_builder: Callable[..., Path]
     ) -> None:
-        tree = lint_tree({"README.md": ""}, repo=False)
+        tree = lint_tree_builder({"README.md": ""}, repo=False)
         result = CliRunner().invoke(app, ["check", str(tree)])
         assert result.exit_code == 2
 
     def test_a_missing_directory_exits_two(self, tmp_path: Path) -> None:
         assert CliRunner().invoke(app, ["check", str(tmp_path / "absent")]).exit_code == 2
 
-    def test_git_missing_exits_two(self, lint_data_tree: Tree, monkeypatch) -> None:
-        tree = lint_data_tree("compliant")
+    def test_git_missing_exits_two(self, lint_data_tree_builder: Tree, monkeypatch) -> None:
+        tree = lint_data_tree_builder("compliant")
         monkeypatch.setenv("PATH", str(tree))
         assert CliRunner().invoke(app, ["check", str(tree)]).exit_code == 2
 
-    def test_a_subdirectory_audits_the_repository_holding_it(self, lint_data_tree: Tree) -> None:
-        tree = lint_data_tree("drifted")
+    def test_a_subdirectory_audits_the_repository_holding_it(
+        self, lint_data_tree_builder: Tree
+    ) -> None:
+        tree = lint_data_tree_builder("drifted")
         (tree / "deep").mkdir()
         assert audit(tree / "deep") == audit(tree)
 
     def test_a_repository_with_a_workflow_and_the_ci_trio_is_clean(
-        self, lint_tree: Callable[..., Path]
+        self, lint_tree_builder: Callable[..., Path]
     ) -> None:
-        tree = lint_tree(WORKFLOW_REPOSITORY)
+        tree = lint_tree_builder(WORKFLOW_REPOSITORY)
         assert audit(tree) == []
         result = CliRunner().invoke(app, ["check", str(tree)])
         assert result.exit_code == 0
 
 
 class TestUmbrella:
-    def test_the_nested_repository_is_neither_read_nor_audited(self, lint_data_tree: Tree) -> None:
-        assert audit(lint_data_tree("umbrella")) == []
+    def test_the_nested_repository_is_neither_read_nor_audited(
+        self, lint_data_tree_builder: Tree
+    ) -> None:
+        assert audit(lint_data_tree_builder("umbrella")) == []
 
-    def test_the_nested_repository_audits_on_its_own(self, lint_data_tree: Tree) -> None:
-        findings = audit(lint_data_tree("umbrella") / "sub")
+    def test_the_nested_repository_audits_on_its_own(self, lint_data_tree_builder: Tree) -> None:
+        findings = audit(lint_data_tree_builder("umbrella") / "sub")
         assert ("tflint", "missing-hook") in {(f.subject, f.rule.value) for f in findings}
         assert {f.source.parent.name for f in findings} == {"sub"}

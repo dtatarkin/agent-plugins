@@ -64,9 +64,9 @@ class TestHookConfig:
 
     @pytest.mark.parametrize("text", ["repos: [\n", "hooks: []\n"])
     def test_it_is_one_parse_finding_and_no_rule_findings(
-        self, lint_tree: Callable[..., Path], text: str
+        self, lint_tree_builder: Callable[..., Path], text: str
     ) -> None:
-        tree = lint_tree({".pre-commit-config.yaml": text})
+        tree = lint_tree_builder({".pre-commit-config.yaml": text})
         findings = [f for f in audit(tree) if f.source.name == ".pre-commit-config.yaml"]
         assert [f.rule for f in findings] == [RuleId.PARSE]
 
@@ -89,8 +89,9 @@ class TestRuff:
         assert load_ruff(tmp_path, {"project": {}}) is None
 
 
-def test_lookup_walks_a_dotted_key() -> None:
-    document = {"rules": {"line-length": {"max": 120}}}
-    assert lookup(document, "rules.line-length.max") == 120
-    assert lookup(document, "rules.line-length.min") is None
-    assert lookup(document, "rules.line-length.max.deeper") is None
+class TestLookup:
+    def test_lookup_walks_a_dotted_key(self) -> None:
+        document = {"rules": {"line-length": {"max": 120}}}
+        assert lookup(document, "rules.line-length.max") == 120
+        assert lookup(document, "rules.line-length.min") is None
+        assert lookup(document, "rules.line-length.max.deeper") is None

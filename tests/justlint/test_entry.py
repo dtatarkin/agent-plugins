@@ -68,16 +68,14 @@ class TestConsoleScript:
         assert SCRIPT.is_file(), "run `uv sync` to install the console scripts"
 
     def test_check_over_the_violating_fixtures_exits_one(
-        self, data_tree: Callable[[str], Path]
+        self, data_tree_builder: Callable[[str], Path]
     ) -> None:
-        result = _run("check", str(data_tree("violating")))
+        result = _run("check", str(data_tree_builder("violating")))
         assert result.returncode == 1
         assert "10 finding(s) in 2 file(s)" in result.stdout
 
-    def test_check_over_the_compliant_fixtures_exits_zero(
-        self, data_tree: Callable[[str], Path]
-    ) -> None:
-        result = _run("check", str(data_tree("compliant")))
+    def test_check_over_the_compliant_fixtures_exits_zero(self, data_tree: Path) -> None:
+        result = _run("check", str(data_tree))
         assert result.returncode == 0
         assert result.stdout == ""
 

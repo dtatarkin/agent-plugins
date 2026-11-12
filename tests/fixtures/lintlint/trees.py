@@ -1,9 +1,12 @@
 """Repositories to audit, and the hook state the ratchet keeps beside them.
 
-Two builders: `lint_tree` writes a tree from a mapping, and `lint_data_tree`
-copies one of the committed trees under `tests/lintlint/data/`. Both end in a
-real `git add`, because the checker derives from the tracked files and nothing
-else.
+Two builders: `lint_tree_builder` writes a tree from a mapping, and
+`lint_data_tree_builder` copies one of the committed trees under
+`tests/lintlint/data/`. Both end in a real `git add`, because the checker
+derives from the tracked files and nothing else. Their concrete forms are an
+empty repository (`lint_tree`) and the `compliant` tree (`lint_data_tree`).
+`lint_hook_builder` has no concrete form: every call names the event it feeds,
+so there is no default answer to hand a test.
 
 A committed tree is written in disguise and restored on copy, as `justlint`'s
 are. Git will not track a path named `.git`, so a nested repository is marked
@@ -74,7 +77,7 @@ def _index(root: Path) -> None:
 
 
 @pytest.fixture
-def lint_tree(tmp_path: Path) -> Callable[..., Path]:
+def lint_tree_builder(tmp_path: Path) -> Callable[..., Path]:
     """Write a tree of files under a fresh directory and return its root.
 
     A `NESTED_REPO` file makes its directory a repository of its own, `repo=False`
@@ -102,7 +105,13 @@ def lint_tree(tmp_path: Path) -> Callable[..., Path]:
 
 
 @pytest.fixture
-def lint_data_tree(tmp_path: Path) -> Callable[[str], Path]:
+def lint_tree(lint_tree_builder: Callable[..., Path]) -> Path:
+    """An empty repository."""
+    return lint_tree_builder({})
+
+
+@pytest.fixture
+def lint_data_tree_builder(tmp_path: Path) -> Callable[[str], Path]:
     """Copy a committed tree from `tests/lintlint/data/`, undo its disguise and
     add it to a fresh repository's index.
     """
@@ -122,7 +131,13 @@ def lint_data_tree(tmp_path: Path) -> Callable[[str], Path]:
 
 
 @pytest.fixture
-def lint_hook(
+def lint_data_tree(lint_data_tree_builder: Callable[[str], Path]) -> Path:
+    """The committed `compliant` tree."""
+    return lint_data_tree_builder("compliant")
+
+
+@pytest.fixture
+def lint_hook_builder(
     plugin_data: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],

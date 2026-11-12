@@ -33,18 +33,17 @@ def if_filters(event: str) -> set[str]:
     return {hook["if"] for group in manifest["hooks"][event] for hook in group["hooks"]}
 
 
-@pytest.mark.parametrize("event", EDIT_EVENTS)
-def test_the_filters_equal_the_topics_paths(event: str) -> None:
-    expected = {f"{tool}({glob})" for tool in ("Edit", "Write") for glob in paths_union()}
-    assert if_filters(event) == expected
+class TestLintHookFilters:
+    @pytest.mark.parametrize("event", EDIT_EVENTS)
+    def test_the_filters_equal_the_topics_paths(self, event: str) -> None:
+        expected = {f"{tool}({glob})" for tool in ("Edit", "Write") for glob in paths_union()}
+        assert if_filters(event) == expected
 
+    def test_the_in_process_filter_equals_the_topics_paths(self) -> None:
+        assert {f"**/{glob}" for glob in GOVERNED_GLOBS} == paths_union()
 
-def test_the_in_process_filter_equals_the_topics_paths() -> None:
-    assert {f"**/{glob}" for glob in GOVERNED_GLOBS} == paths_union()
-
-
-@pytest.mark.parametrize("event", ["Stop", "SubagentStop"])
-def test_the_turn_end_gate_is_unconditional(event: str) -> None:
-    manifest = json.loads((PLUGIN_DIR / "hooks" / "hooks.json").read_text())
-    hooks = [hook for group in manifest["hooks"][event] for hook in group["hooks"]]
-    assert [hook.get("if") for hook in hooks] == [None]
+    @pytest.mark.parametrize("event", ["Stop", "SubagentStop"])
+    def test_the_turn_end_gate_is_unconditional(self, event: str) -> None:
+        manifest = json.loads((PLUGIN_DIR / "hooks" / "hooks.json").read_text())
+        hooks = [hook for group in manifest["hooks"][event] for hook in group["hooks"]]
+        assert [hook.get("if") for hook in hooks] == [None]

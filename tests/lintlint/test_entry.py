@@ -69,16 +69,16 @@ class TestConsoleScript:
         assert SCRIPT.is_file(), "run `uv sync` to install the console scripts"
 
     def test_check_over_the_drifted_fixtures_exits_one(
-        self, lint_data_tree: Callable[[str], Path]
+        self, lint_data_tree_builder: Callable[[str], Path]
     ) -> None:
-        result = _run("check", str(lint_data_tree("drifted")))
+        result = _run("check", str(lint_data_tree_builder("drifted")))
         assert result.returncode == 1
         assert "finding(s) in 5 file(s)" in result.stdout
 
     def test_check_over_the_compliant_fixtures_exits_zero(
-        self, lint_data_tree: Callable[[str], Path]
+        self, lint_data_tree_builder: Callable[[str], Path]
     ) -> None:
-        result = _run("check", str(lint_data_tree("compliant")))
+        result = _run("check", str(lint_data_tree_builder("compliant")))
         assert result.returncode == 0
         assert result.stdout == ""
 
@@ -94,12 +94,12 @@ class TestConsoleScript:
 
     def test_a_hook_answers_within_the_budget(
         self,
-        lint_data_tree: Callable[[str], Path],
+        lint_data_tree_builder: Callable[[str], Path],
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "data"))
-        tree = lint_data_tree("compliant")
+        tree = lint_data_tree_builder("compliant")
         payload = json.dumps(
             {
                 "hook_event_name": "PostToolUse",
