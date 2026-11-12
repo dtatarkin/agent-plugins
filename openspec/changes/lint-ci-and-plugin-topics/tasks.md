@@ -70,7 +70,7 @@ that stay there (design.md A5). Searches use `git grep` or `command grep`.
 
 ## 3. Agent plugin manifests end to end
 
-- [ ] 3.1 In `types.py`, `consts.py` and `signals.py`, derive the Claude-manifest and portable-manifest signals per
+- [x] 3.1 In `types.py`, `consts.py` and `signals.py`, derive the Claude-manifest and portable-manifest signals per
   design.md D5. The portable one reads each candidate `plugin.json`'s `$schema` against D2's URL pattern; unreadable or
   invalid JSON carries no signal. Tests in `tests/lintlint/test_signals.py`:
   - each manifest kind carries its signal;
@@ -78,7 +78,7 @@ that stay there (design.md A5). Searches use `git grep` or `command grep`.
   - `.agents/plugins/marketplace.json`, `action.yml` and a dependabot file carry none.
 
   Verify: those tests pass.
-- [ ] 3.2 Add `check-jsonschema` and `claude-plugin-validate` to `HOUSE_HOOKS` with their canon per D6:
+- [x] 3.2 Add `check-jsonschema` and `claude-plugin-validate` to `HOUSE_HOOKS` with their canon per D6:
   - `--strict` for the validator;
   - `--schemafile` matching D2's pattern, separate or joined by `=`;
   - manual without `always_run` for the schema check (D1), splitting `Canon.manual` so `pip-audit` keeps both.
@@ -93,7 +93,7 @@ that stay there (design.md A5). Searches use `git grep` or `command grep`.
   - `pip-audit` still owes `always_run`.
 
   `test_citations.py` passes. Verify: `uv run pytest tests/lintlint`, except `test_acceptance.py` until 3.3.
-- [ ] 3.3 Converge this repository: add the `# Agent plugins.` block of design.md D9 to `.pre-commit-config.yaml`. The
+- [x] 3.3 Converge this repository: add the `# Agent plugins.` block of design.md D9 to `.pre-commit-config.yaml`. The
   `check-jsonschema` pin is task 1.1's version tag. Update the header comment's signal list. Run
   `uvx pre-commit validate-config`. Verify:
   - `uv run pytest` passes, `test_acceptance.py` included;

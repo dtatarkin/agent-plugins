@@ -6,6 +6,7 @@ Terraform by the thousand, and a nested repository appears as one gitlink
 entry, so its files contribute no signal without a rule saying so.
 """
 
+import json
 import re
 import subprocess
 from collections.abc import Iterable, Iterator
@@ -13,8 +14,11 @@ from pathlib import Path, PurePosixPath
 from typing import NamedTuple
 
 from agent_plugins.lintlint.consts import (
+    AGENT_PLUGINS_SCHEMA,
     ANSIBLE_DIR,
     ANSIBLE_MANIFEST,
+    CLAUDE_MANIFESTS,
+    CLAUDE_PLUGIN_DIR,
     DBT_PROJECT,
     DOCKERFILE_NAME,
     DOCKERFILE_SUFFIX,
@@ -25,10 +29,12 @@ from agent_plugins.lintlint.consts import (
     MANIFEST_READ_LIMIT,
     MARKUP_SUFFIXES,
     NODE_LOCKFILES,
+    PORTABLE_MANIFEST,
     PYTHON_PROJECT,
     PYTHON_SUFFIX,
     ROLE_TASKS_DIR,
     ROLES_DIR,
+    SCHEMA_KEY,
     SHELL_INTERPRETERS,
     SHELL_SUFFIX,
     SUBMODULES_FILE,
@@ -107,6 +113,10 @@ def derive(repository: Repository, exclude: str | None = None) -> Signals:
         present.add(Signal.SCANNED)
     if DBT_PROJECT in names:
         present.add(Signal.DATA)
+    if any(_is_claude_manifest(path) for path in paths):
+        present.add(Signal.CLAUDE_MANIFEST)
+    if any(_is_portable_manifest(repository.root, path) for path in paths):
+        present.add(Signal.PORTABLE_MANIFEST)
 
     pairs = list(_node_lockfile_pairs(paths))
     executors = frozenset(
@@ -200,6 +210,25 @@ def _is_dockerfile(path: PurePosixPath) -> bool:
         or path.name.startswith(f"{DOCKERFILE_NAME}.")
         or path.name.endswith(DOCKERFILE_SUFFIX)
     )
+
+
+def _is_claude_manifest(path: PurePosixPath) -> bool:
+    return path.parent.name == CLAUDE_PLUGIN_DIR and path.name in CLAUDE_MANIFESTS
+
+
+def _is_portable_manifest(root: Path, path: PurePosixPath) -> bool:
+    """A `plugin.json` outside the Claude directory whose `$schema` is an
+    Agent Plugins schema. One that cannot be read or parsed carries no signal:
+    parsing is the hygiene set's JSON check.
+    """
+    if path.name != PORTABLE_MANIFEST or CLAUDE_PLUGIN_DIR in path.parts[:-1]:
+        return False
+    try:
+        document = json.loads((root / path).read_bytes())
+    except (OSError, ValueError):
+        return False
+    schema = document.get(SCHEMA_KEY) if isinstance(document, dict) else None
+    return isinstance(schema, str) and AGENT_PLUGINS_SCHEMA.fullmatch(schema) is not None
 
 
 def _has_cluster_content(repository: Repository) -> bool:

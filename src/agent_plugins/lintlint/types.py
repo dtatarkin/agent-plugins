@@ -56,6 +56,8 @@ class Signal(StrEnum):
     SCANNED = "scanned"
     WEB = "web"
     DATA = "data"
+    CLAUDE_MANIFEST = "claude-manifest"
+    PORTABLE_MANIFEST = "portable-manifest"
 
 
 @dataclass(frozen=True)
@@ -108,7 +110,8 @@ class Canon(NamedTuple):
     """The canonical arguments, filters and stages of one house hook.
 
     A flag holding a space is a flag and its value: either spelling, separate
-    or joined by `=`, satisfies it.
+    or joined by `=`, satisfies it. `manual` asks for the manual stage alone;
+    `always_run` is the further shape of a check that is handed no files.
     """
 
     topic: str
@@ -117,6 +120,7 @@ class Canon(NamedTuple):
     filtered: bool = False
     serial: bool = False
     manual: bool = False
+    always_run: bool = False
 
 
 class Finding(NamedTuple):

@@ -1,7 +1,9 @@
 # The house lint sets this repository's signals derive: the baseline set
 # (always), python (pyproject.toml and src/), markup (YAML, TOML and markdown
-# files) and shell (the guard is a bash script). No infrastructure, web or data
-# signal. uv.lock is tracked, so the Python set carries its lockfile hook and
+# files), shell (the guard is a bash script), and agent plugins (each plugin's
+# portable plugin.json declares the Agent Plugins schema, and its
+# .claude-plugin/ manifests and the marketplace are Claude manifests). No
+# infrastructure, web, data or workflow signal. uv.lock is tracked, so the Python set carries its lockfile hook and
 # its audit, and every local hook the lockfile can pin runs through `uv run`.
 #
 # There is no top-level `exclude:`: it would exempt paths from the
@@ -172,6 +174,27 @@ repos:
       - id: lychee
         args: [--offline, --no-progress]
         types: [markdown]
+
+  # Agent plugins. The portable manifests' schema runs on demand, because the
+  # schema is fetched over the network:
+  # `prek run --hook-stage manual check-jsonschema --all-files`. The Claude
+  # manifests go through the host's own validator, which must be on PATH.
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.39.0
+    hooks:
+      - id: check-jsonschema
+        args: [--schemafile, https://agent-plugins.org/schemas/1.0.0/plugin.schema.json]
+        files: (^|/)plugin\.json$
+        exclude: (^|/)\.claude-plugin/
+        stages: [manual]
+
+  - repo: local
+    hooks:
+      - id: claude-plugin-validate
+        name: claude plugin validate
+        entry: bash -c 'for f in "$@"; do claude plugin validate --strict "$f" || exit 1; done' --
+        language: system
+        files: (^|/)\.claude-plugin/(plugin|marketplace)\.json$
 
   # Shell.
   - repo: https://github.com/shellcheck-py/shellcheck-py

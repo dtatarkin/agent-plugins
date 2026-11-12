@@ -89,6 +89,8 @@ HOUSE_HOOKS: tuple[HouseHook, ...] = (
     HouseHook("dbt-parse", "data", Signal.DATA),
     HouseHook("check-model-has-description", "data", Signal.DATA),
     HouseHook("check-model-has-tests", "data", Signal.DATA),
+    HouseHook("check-jsonschema", "agent-plugins", Signal.PORTABLE_MANIFEST),
+    HouseHook("claude-plugin-validate", "agent-plugins", Signal.CLAUDE_MANIFEST),
 )
 
 # Tools the standard retires, found by hook id or as a word of a local entry.
@@ -128,7 +130,13 @@ HOOK_CANON: dict[str, Canon] = {
     # Supplying `args:` replaces upstream's `--no-progress`, so both are canon.
     "lychee": Canon("markup", flags=("--offline", "--no-progress")),
     "ansible-lint": Canon("infra", flags=("--offline",), whole_program=True, serial=True),
-    "pip-audit": Canon("python", flags=("--no-emit-workspace",), whole_program=True, manual=True),
+    "pip-audit": Canon(
+        "python",
+        flags=("--no-emit-workspace",),
+        whole_program=True,
+        manual=True,
+        always_run=True,
+    ),
     "mypy": Canon("python", whole_program=True, filtered=True),
     "ty": Canon("python", whole_program=True, filtered=True),
     "typecheck": Canon("web", whole_program=True, filtered=True),
@@ -145,7 +153,19 @@ HOOK_CANON: dict[str, Canon] = {
     "dbt-parse": Canon("data", whole_program=True, filtered=True),
     "eslint": Canon("web", serial=True),
     "prettier": Canon("web", serial=True),
+    # Handed the manifests it matches, so manual without `always_run`.
+    "check-jsonschema": Canon("agent-plugins", manual=True),
+    "claude-plugin-validate": Canon("agent-plugins", flags=("--strict",)),
 }
+
+# The generic schema checker is the house hook only when pointed at the Agent
+# Plugins schema, at whatever version the manifests declare; pointed at any
+# other schema it is the project's.
+SCHEMA_CHECK_ID = "check-jsonschema"
+SCHEMA_FILE_FLAG = "--schemafile"
+AGENT_PLUGINS_SCHEMA = re.compile(
+    r"https://agent-plugins\.org/schemas/[^/\s]+/plugin\.schema\.json"
+)
 
 # The formatter's type list, the one hook whose filter is canonical to the item.
 RUFF_FORMAT_TYPES = frozenset({"python", "pyi", "jupyter"})
@@ -281,6 +301,13 @@ WEB_MANIFEST = "package.json"
 # set only with one of them under its directory.
 WEB_SOURCE_SUFFIXES = frozenset({".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"})
 DBT_PROJECT = "dbt_project.yml"
+# The Claude manifests sit in the one directory their host reads; a portable
+# manifest is a `plugin.json` anywhere else that declares the Agent Plugins
+# schema. Other hosts' marketplace files carry no signal.
+CLAUDE_PLUGIN_DIR = ".claude-plugin"
+CLAUDE_MANIFESTS = frozenset({"plugin.json", "marketplace.json"})
+PORTABLE_MANIFEST = "plugin.json"
+SCHEMA_KEY = "$schema"
 
 # Git's mode for a nested repository's entry in the listing, and an executable.
 GITLINK_MODE = "160000"

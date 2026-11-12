@@ -376,6 +376,129 @@ class TestStages:
         assert pairs(audit(tree)) == {("pip-audit", "hook-args")}
 
 
+SCHEMA_URL = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+
+PLUGIN_MANIFESTS = {
+    "plugins/a/plugin.json": f'{{"$schema": "{SCHEMA_URL}", "name": "a"}}',
+    "plugins/a/.claude-plugin/plugin.json": '{"name": "a"}',
+}
+
+SCHEMA_CHECK = f"""
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.39.0
+    hooks:
+      - id: check-jsonschema
+        args: [--schemafile, {SCHEMA_URL}]
+        files: (^|/)plugin\\.json$
+        exclude: (^|/)\\.claude-plugin/
+        stages: [manual]
+"""
+
+# The schema check's stage, apart from the dependency audit's.
+MANUAL_STAGE = "        stages: [manual]\n"
+SCHEMA_STAGE = "\\.claude-plugin/\n" + MANUAL_STAGE
+
+CLAUDE_VALIDATE = """\
+      - id: claude-plugin-validate
+        name: claude plugin validate
+        entry: bash -c 'for f in "$@"; do claude plugin validate --strict "$f" || exit 1; done' --
+        language: system
+        files: (^|/)\\.claude-plugin/(plugin|marketplace)\\.json$
+"""
+
+
+def add_plugin_hooks(tree: Path) -> None:
+    add_local_hooks(tree, CLAUDE_VALIDATE)
+    with (tree / CONFIG).open("a") as stream:
+        stream.write(SCHEMA_CHECK)
+
+
+@pytest.fixture
+def plugin_tree(tree: Path) -> Path:
+    track(tree, PLUGIN_MANIFESTS)
+    add_plugin_hooks(tree)
+    return tree
+
+
+class TestAgentPlugins:
+    def test_a_tree_with_both_manifests_and_both_hooks_is_clean(self, plugin_tree: Path) -> None:
+        assert audit(plugin_tree) == []
+
+    @pytest.mark.parametrize("hook", ["check-jsonschema", "claude-plugin-validate"])
+    def test_each_hook_missing(self, plugin_tree: Path, hook: str) -> None:
+        edit(plugin_tree, f"      - id: {hook}\n", "      - id: project-check\n")
+        findings = audit(plugin_tree)
+        assert pairs(findings) == {(hook, "missing-hook")}
+        assert findings[0].topic == "agent-plugins"
+
+    def test_each_hook_stray(self, tree: Path) -> None:
+        add_plugin_hooks(tree)
+        assert pairs(audit(tree)) == {
+            ("check-jsonschema", "stray-hook"),
+            ("claude-plugin-validate", "stray-hook"),
+        }
+
+    def test_one_manifest_kind_derives_its_check_alone(self, tree: Path) -> None:
+        track(tree, {".claude-plugin/marketplace.json": "{}"})
+        add_plugin_hooks(tree)
+        assert pairs(audit(tree)) == {("check-jsonschema", "stray-hook")}
+
+    def test_the_validator_without_strict(self, plugin_tree: Path) -> None:
+        edit(plugin_tree, "validate --strict", "validate")
+        findings = audit(plugin_tree)
+        assert pairs(findings) == {("claude-plugin-validate", "hook-args")}
+        assert "--strict" in findings[0].detail
+
+    def test_the_validator_looping_under_set_e(self, plugin_tree: Path) -> None:
+        edit(
+            plugin_tree,
+            '\'for f in "$@"; do claude plugin validate --strict "$f" || exit 1; done\'',
+            '\'set -e; for f in "$@"; do claude plugin validate --strict "$f"; done\'',
+        )
+        assert audit(plugin_tree) == []
+
+    def test_the_schema_check_at_commit(self, plugin_tree: Path) -> None:
+        edit(plugin_tree, SCHEMA_STAGE, SCHEMA_STAGE.removesuffix(MANUAL_STAGE))
+        findings = audit(plugin_tree)
+        assert pairs(findings) == {("check-jsonschema", "hook-args")}
+        assert "manual" in findings[0].detail
+
+    def test_the_schema_check_owes_no_always_run(self, plugin_tree: Path) -> None:
+        assert "always_run" not in (plugin_tree / CONFIG).read_text().split("check-jsonschema")[1]
+        assert audit(plugin_tree) == []
+
+    def test_the_schema_flag_joined_by_an_equals_sign(self, plugin_tree: Path) -> None:
+        edit(plugin_tree, f"--schemafile, {SCHEMA_URL}", f"--schemafile={SCHEMA_URL}")
+        assert audit(plugin_tree) == []
+
+    def test_another_agent_plugins_schema_version(self, plugin_tree: Path) -> None:
+        edit(plugin_tree, "schemas/1.0.0/", "schemas/2.0.0/", CONFIG)
+        assert audit(plugin_tree) == []
+
+    def test_a_schema_check_of_another_schema_does_not_satisfy_the_set(
+        self, plugin_tree: Path
+    ) -> None:
+        edit(plugin_tree, SCHEMA_URL, "https://json.schemastore.org/package.json", CONFIG)
+        edit(plugin_tree, SCHEMA_STAGE, SCHEMA_STAGE.removesuffix(MANUAL_STAGE))
+        assert pairs(audit(plugin_tree)) == {("check-jsonschema", "missing-hook")}
+
+    def test_a_schema_check_of_another_schema_is_the_project_s(self, tree: Path) -> None:
+        with (tree / CONFIG).open("a") as stream:
+            stream.write(
+                "\n  - repo: https://github.com/python-jsonschema/check-jsonschema\n"
+                "    rev: 0.39.0\n    hooks:\n      - id: check-jsonschema\n"
+                "        args: [--schemafile, schemas/settings.json]\n"
+                "        files: ^settings/\n"
+            )
+        assert audit(tree) == []
+
+    def test_the_audit_still_owes_always_run(self, tree: Path) -> None:
+        edit(tree, "        always_run: true\n", "")
+        findings = audit(tree)
+        assert pairs(findings) == {("pip-audit", "hook-args")}
+        assert "always_run" in findings[0].detail
+
+
 class TestForm:
     def test_a_locked_tree_s_by_name_entry(self, tree: Path) -> None:
         edit(tree, "entry: uv run mypy", "entry: mypy")

@@ -180,6 +180,68 @@ class TestWeb:
         assert Signal.WEB not in signals_of(tree).present
 
 
+PORTABLE = '{"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json", "name": "a"}'
+MANIFEST_SIGNALS = {Signal.CLAUDE_MANIFEST, Signal.PORTABLE_MANIFEST}
+
+
+class TestPluginManifests:
+    @pytest.mark.parametrize(
+        "path",
+        [
+            ".claude-plugin/plugin.json",
+            ".claude-plugin/marketplace.json",
+            "plugins/a/.claude-plugin/plugin.json",
+        ],
+    )
+    def test_a_claude_manifest_carries_its_signal(self, lint_tree: Tree, path: str) -> None:
+        present = signals_of(lint_tree({path: "{}"})).present
+        assert present & MANIFEST_SIGNALS == {Signal.CLAUDE_MANIFEST}
+
+    @pytest.mark.parametrize("path", ["plugin.json", "plugins/a/plugin.json"])
+    def test_a_portable_manifest_carries_its_signal(self, lint_tree: Tree, path: str) -> None:
+        present = signals_of(lint_tree({path: PORTABLE})).present
+        assert present & MANIFEST_SIGNALS == {Signal.PORTABLE_MANIFEST}
+
+    def test_another_schema_version_is_the_same_signal(self, lint_tree: Tree) -> None:
+        manifest = PORTABLE.replace("1.0.0", "2.1.0")
+        assert Signal.PORTABLE_MANIFEST in signals_of(lint_tree({"plugin.json": manifest})).present
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            '{"name": "a"}',
+            '{"$schema": "https://json.schemastore.org/package.json"}',
+            '{"$schema": 1}',
+            '["https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"]',
+            "{not json",
+            "",
+        ],
+    )
+    def test_a_plugin_json_without_the_schema_carries_none(
+        self, lint_tree: Tree, text: str
+    ) -> None:
+        assert not signals_of(lint_tree({"plugin.json": text})).present & MANIFEST_SIGNALS
+
+    def test_a_schema_declaring_manifest_under_the_claude_directory_is_claude_s(
+        self, lint_tree: Tree
+    ) -> None:
+        present = signals_of(lint_tree({".claude-plugin/plugin.json": PORTABLE})).present
+        assert present & MANIFEST_SIGNALS == {Signal.CLAUDE_MANIFEST}
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            ".agents/plugins/marketplace.json",
+            "action.yml",
+            ".github/dependabot.yml",
+            "docs/.claude-plugin/settings.json",
+            ".claude-plugin/nested/plugin.json",
+        ],
+    )
+    def test_other_files_carry_none(self, lint_tree: Tree, path: str) -> None:
+        assert not signals_of(lint_tree({path: "{}"})).present & MANIFEST_SIGNALS
+
+
 class TestExcludedFiles:
     def test_a_file_every_hook_excludes_carries_no_content_signal(self, lint_tree: Tree) -> None:
         tree = lint_tree({"vendor/lib/Dockerfile": "", "vendor/lib/main.tf": ""})

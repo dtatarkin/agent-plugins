@@ -62,9 +62,6 @@ class HookConfig:
     pins: tuple[RepoPin, ...]
     exclude: str | None = None
 
-    def hook_ids(self) -> set[str]:
-        return {hook.id for hook in self.hooks}
-
 
 class RuffSettings(NamedTuple):
     """The ruff lint table, the file holding it, and that file's key prefix."""

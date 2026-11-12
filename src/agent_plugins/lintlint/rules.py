@@ -27,6 +27,7 @@ from agent_plugins.lintlint.config import (
     read_yaml,
 )
 from agent_plugins.lintlint.consts import (
+    AGENT_PLUGINS_SCHEMA,
     ANSIBLE_COLLECTIONS_DEPENDENCY,
     ANSIBLE_LINT_ID,
     DBT_CHECKPOINT_REPO,
@@ -58,6 +59,8 @@ from agent_plugins.lintlint.consts import (
     RUFF_TEST_IGNORES,
     RUMDL_FILE,
     RUMDL_VALUES,
+    SCHEMA_CHECK_ID,
+    SCHEMA_FILE_FLAG,
     SHELLCHECK_FILE,
     TOPIC_TEMPLATE,
     TYPOS_DEFAULT_FLAGS,
@@ -156,15 +159,36 @@ def _check_hook_config(path: Path, config: HookConfig, signals: Signals) -> Iter
     yield from _check_order(path, config)
     for hook in config.hooks:
         yield from _check_retired(path, hook)
-        yield from _check_args(path, hook)
+        if _is_house_entry(hook):
+            yield from _check_args(path, hook)
         yield from _check_form(path, hook, signals)
+
+
+def _is_house_entry(hook: HookEntry) -> bool:
+    """Whether an entry is the house hook its id names. The generic schema
+    checker is that only when pointed at the Agent Plugins schema; any other
+    such entry is the project's, neither satisfying the set nor straying from it.
+    """
+    if hook.id != SCHEMA_CHECK_ID:
+        return True
+    return any(AGENT_PLUGINS_SCHEMA.fullmatch(schema) for schema in _schema_files(hook.args))
+
+
+def _schema_files(args: Iterable[str]) -> Iterator[str]:
+    """Each value of the schema flag, separate or joined by `=`."""
+    tokens = [token for arg in args for token in arg.split()]
+    for index, token in enumerate(tokens):
+        if token == SCHEMA_FILE_FLAG and index + 1 < len(tokens):
+            yield tokens[index + 1]
+        elif token.startswith(f"{SCHEMA_FILE_FLAG}="):
+            yield token.removeprefix(f"{SCHEMA_FILE_FLAG}=")
 
 
 def _check_hook_set(path: Path, config: HookConfig, signals: Signals) -> Iterator[Finding]:
     """The set in both directions: a hook its signal derives and the file lacks,
     and a house hook the file carries whose signal is gone.
     """
-    carried = config.hook_ids()
+    carried = {hook.id for hook in config.hooks if _is_house_entry(hook)}
     for house in HOUSE_HOOKS:
         derived = house.signal in signals.present
         if derived and house.id not in carried:
@@ -253,11 +277,10 @@ def _check_args(path: Path, hook: HookEntry) -> Iterator[Finding]:
         yield wrong("no type or path filter", canon.topic)
     if canon.serial and hook.require_serial is not True:
         yield wrong("`require_serial: true` is missing", canon.topic)
-    if canon.manual:
-        if set(hook.stages) != {"manual"}:
-            yield wrong("`stages: [manual]` is missing", canon.topic)
-        if hook.always_run is not True:
-            yield wrong("`always_run: true` is missing", canon.topic)
+    if canon.manual and set(hook.stages) != {"manual"}:
+        yield wrong("`stages: [manual]` is missing", canon.topic)
+    if canon.always_run and hook.always_run is not True:
+        yield wrong("`always_run: true` is missing", canon.topic)
 
 
 def _check_form(path: Path, hook: HookEntry, signals: Signals) -> Iterator[Finding]:
