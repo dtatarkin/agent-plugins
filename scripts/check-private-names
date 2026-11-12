@@ -28,7 +28,7 @@ import sys
 import warnings
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import IO, NoReturn
+from typing import IO, NamedTuple, NoReturn
 
 PROG = "check-private-names"
 
@@ -47,13 +47,34 @@ MODE_LINK = "120000"
 MODE_GITLINK = "160000"
 MODE_TREE = "40000"
 
-# A match found on a line: its 1-based line number and the matched text.
-Hit = tuple[int, str]
-# A scan's result: whether anything matched (an empty match counts, as it did
-# for grep's exit status), and the non-empty matches, which are what is shown.
-Scan = tuple[bool, list[Hit]]
-# One file of a tree or the index: mode, path, object id.
-Entry = tuple[str, str, str]
+
+class Hit(NamedTuple):
+    """A match found on a line."""
+
+    line: int  # 1-based
+    text: str
+
+
+class Scan(NamedTuple):
+    # An empty match counts towards `matched`, as it did for grep's exit
+    # status; only the non-empty matches are shown.
+    matched: bool
+    hits: list[Hit]
+
+
+class Entry(NamedTuple):
+    """One file of a tree or the index."""
+
+    mode: str
+    path: str
+    oid: str
+
+
+class Findings(NamedTuple):
+    """A tree's finding lines, and whether anything matched at all."""
+
+    matched: bool
+    lines: list[str]
 
 
 def die(message: str) -> NoReturn:
@@ -73,8 +94,6 @@ def decode(data: bytes) -> str:
 def readable_file(path: Path) -> bool:
     return path.is_file() and os.access(path, os.R_OK)
 
-
-# --- The list ---------------------------------------------------------------
 
 BLANK = re.compile(r"[ \t\n\r\f\v]*")
 
@@ -165,9 +184,6 @@ def load_list() -> re.Pattern[str]:
         no_list(f"the list '{path}' holds patterns that cannot be combined into one expression")
 
 
-# --- Matching and reporting -------------------------------------------------
-
-
 class Report:
     def __init__(self, patterns: re.Pattern[str]) -> None:
         self.patterns = patterns
@@ -185,14 +201,14 @@ class Report:
             for match in self.patterns.finditer(line):
                 hit = True
                 if match.group():
-                    hits.append((number, match.group()))
-        return hit, hits
+                    hits.append(Hit(number, match.group()))
+        return Scan(hit, hits)
 
     def emit(self, line: str) -> None:
         self.out.write(line.encode(ENCODING, ERRORS) + b"\n")
 
     def note(self, scan: Scan, lines: Iterable[str]) -> None:
-        if scan[0]:
+        if scan.matched:
             self.found = True
         for line in lines:
             self.emit(line)
@@ -200,15 +216,12 @@ class Report:
     def paths(self, prefix: str, paths: Iterable[str]) -> None:
         for path in paths:
             scan = self.scan(path)
-            self.note(scan, (f"{prefix}{path}: path matches: {m}" for _, m in scan[1]))
+            self.note(scan, (f"{prefix}{path}: path matches: {m}" for _, m in scan.hits))
 
     def lines(self, prefix: str, text: str) -> None:
         """Print each match as "PREFIX LINE: MATCH"."""
         scan = self.scan(text)
-        self.note(scan, (f"{prefix}{n}: {m}" for n, m in scan[1]))
-
-
-# --- Git --------------------------------------------------------------------
+        self.note(scan, (f"{prefix}{n}: {m}" for n, m in scan.hits))
 
 
 def git(*args: str, what: str) -> bytes:
@@ -269,11 +282,8 @@ def entries_after_tab(records: bytes) -> list[Entry]:
             continue
         meta, _, path = record.partition(b"\t")
         fields = meta.split()
-        entries.append((fields[0].decode(), decode(path), fields[1].decode()))
+        entries.append(Entry(fields[0].decode(), decode(path), fields[1].decode()))
     return entries
-
-
-# --- Modes ------------------------------------------------------------------
 
 
 def staged(report: Report, paths: Sequence[str]) -> None:
@@ -290,11 +300,11 @@ def staged(report: Report, paths: Sequence[str]) -> None:
         if mode in (MODE_LINK, MODE_GITLINK):
             continue
         scan = report.scan(objects.text(oid))
-        report.note(scan, (f"{path}:{n}: {m}" for n, m in scan[1]))
+        report.note(scan, (f"{path}:{n}: {m}" for n, m in scan.hits))
     for mode, path, oid in index:
         if mode == MODE_LINK:
             scan = report.scan(objects.text(oid))
-            report.note(scan, (f"{path}: link target matches: {m}" for _, m in scan[1]))
+            report.note(scan, (f"{path}: link target matches: {m}" for _, m in scan.hits))
     objects.close()
 
 
@@ -317,7 +327,7 @@ def message(report: Report, file: str) -> None:
         if line.startswith("#"):
             continue
         scan = report.scan(line)
-        report.note(scan, (f"commit message:{number}: {m}" for _, m in scan[1]))
+        report.note(scan, (f"commit message:{number}: {m}" for _, m in scan.hits))
 
 
 class History:
@@ -330,7 +340,7 @@ class History:
         # commits is read and matched once.
         self.subtrees: dict[str, list[Entry]] = {}
         self.blob_scans: dict[str, Scan] = {}
-        self.tree_lines: dict[str, tuple[bool, list[str]]] = {}
+        self.tree_lines: dict[str, Findings] = {}
 
     def flatten(self, tree: str) -> list[Entry]:
         """The recursive listing of TREE, in `git ls-tree -r` order."""
@@ -348,9 +358,9 @@ class History:
             oid = data[nul + 1 : nul + 1 + self.hash_bytes].hex()
             pos = nul + 1 + self.hash_bytes
             if mode == MODE_TREE:
-                entries.extend((m, f"{name}/{p}", o) for m, p, o in self.flatten(oid))
+                entries.extend(Entry(m, f"{name}/{p}", o) for m, p, o in self.flatten(oid))
             else:
-                entries.append((mode, name, oid))
+                entries.append(Entry(mode, name, oid))
         self.subtrees[tree] = entries
         return entries
 
@@ -361,7 +371,7 @@ class History:
             self.blob_scans[oid] = cached
         return cached
 
-    def tree(self, tree: str) -> tuple[bool, list[str]]:
+    def tree(self, tree: str) -> Findings:
         """A tree's findings without the commit prefix: content, paths, links."""
         cached = self.tree_lines.get(tree)
         if cached is not None:
@@ -373,19 +383,20 @@ class History:
             if mode in (MODE_LINK, MODE_GITLINK):
                 continue
             scan = self.blob(oid)
-            hit = hit or scan[0]
-            lines.extend(f"{path}:{n}: {m}" for n, m in scan[1])
+            hit = hit or scan.matched
+            lines.extend(f"{path}:{n}: {m}" for n, m in scan.hits)
         for _, path, _ in entries:
             scan = self.report.scan(path)
-            hit = hit or scan[0]
-            lines.extend(f"{path}: path matches: {m}" for _, m in scan[1])
+            hit = hit or scan.matched
+            lines.extend(f"{path}: path matches: {m}" for _, m in scan.hits)
         for mode, path, oid in entries:
             if mode == MODE_LINK:
                 scan = self.blob(oid)
-                hit = hit or scan[0]
-                lines.extend(f"{path}: link target matches: {m}" for _, m in scan[1])
-        self.tree_lines[tree] = (hit, lines)
-        return hit, lines
+                hit = hit or scan.matched
+                lines.extend(f"{path}: link target matches: {m}" for _, m in scan.hits)
+        findings = Findings(hit, lines)
+        self.tree_lines[tree] = findings
+        return findings
 
     def run(self) -> None:
         report = self.report
@@ -403,8 +414,10 @@ class History:
                 continue
             head, _, block = decode(record).partition("\n")
             commit, _, tree = head.partition(" ")
-            hit, lines = self.tree(tree)
-            report.note((hit, []), (f"{commit}: {line}" for line in lines))
+            findings = self.tree(tree)
+            report.note(
+                Scan(findings.matched, []), (f"{commit}: {line}" for line in findings.lines)
+            )
             report.lines(f"{commit}: identity and message line ", block)
 
         refs = decode(git("for-each-ref", "--format=%(refname)", what="git for-each-ref"))

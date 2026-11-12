@@ -22,6 +22,7 @@ Standard library only, and no syntax newer than Python 3.9 parses, so that an
 older python3 reaches the version check below instead of a syntax error.
 """
 
+import enum
 import glob
 import os
 import sys
@@ -151,9 +152,16 @@ def prune(dest: str) -> None:
         remove(link)
 
 
-def link_one(dest: str, file: str) -> bool:
+class Outcome(enum.Enum):
+    LINKED = enum.auto()
+    UNCHANGED = enum.auto()
+    # The name is held by a file or link this script did not make.
+    SKIPPED = enum.auto()
+
+
+def link_one(dest: str, file: str) -> Outcome:
     """Link one rule file under its name, leaving alone whatever this script
-    does not own. Returns whether the name was held by something else."""
+    does not own."""
     rel = file[len(PLUGINS_DIR) + 1 :]
     plugin = rel.split("/", 1)[0]
     topic = os.path.basename(file).removesuffix(".md")
@@ -163,15 +171,15 @@ def link_one(dest: str, file: str) -> bool:
     if os.path.islink(link):
         if is_own(link):
             if same_file(link, file):
-                return False
+                return Outcome.UNCHANGED
         elif same_file(link, file):
-            return False
+            return Outcome.UNCHANGED
         else:
             warn(f"{name}: held by a link to {os.readlink(link)} this script did not make; skipped")
-            return True
+            return Outcome.SKIPPED
     elif os.path.lexists(link):
         warn(f"{name}: held by a file this script did not make; skipped")
-        return True
+        return Outcome.SKIPPED
 
     try:
         if os.path.islink(link):
@@ -180,7 +188,7 @@ def link_one(dest: str, file: str) -> bool:
     except OSError:
         die(f"cannot link {name}")
     print(f"linked {name}", flush=True)
-    return False
+    return Outcome.LINKED
 
 
 def link_files(dest: str, plugins: list[str]) -> bool:
@@ -196,7 +204,7 @@ def link_files(dest: str, plugins: list[str]) -> bool:
     skipped = False
     for pattern in patterns:
         for file in sorted(glob.glob(pattern)):
-            if os.path.isfile(file) and is_scoped(file) and link_one(dest, file):
+            if os.path.isfile(file) and is_scoped(file) and link_one(dest, file) is Outcome.SKIPPED:
                 skipped = True
     return skipped
 

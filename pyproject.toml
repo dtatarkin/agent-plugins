@@ -53,6 +53,9 @@ testpaths = ["tests"]
 line-length = 100
 target-version = "py312"
 src = ["src"]
+# The scripts have no `.py` suffix, so a bare `ruff check .` would skip them;
+# the hooks reach them through their shebang.
+extend-include = ["scripts/check-private-names", "scripts/link-rules"]
 
 [tool.ruff.lint]
 select = [
@@ -95,5 +98,6 @@ namespace_packages = true
 explicit_package_bases = true
 mypy_path = "src"
 # The private-names guard is a stdlib-only script with no `.py` suffix, so it is
-# named here: discovery by suffix would skip it.
+# named here: discovery by suffix would skip it. link-rules is not: mypy names
+# every suffix-less script `__main__`, so it runs alone (the mypy-link-rules hook).
 files = ["src/agent_plugins", "scripts/check-private-names"]
