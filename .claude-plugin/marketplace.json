@@ -7,5 +7,78 @@
   "metadata": {
     "description": "Agent plugins that carry coding conventions."
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "python-rules",
+      "description": "General Python conventions and patterns — typing, configuration, command-line interfaces, error handling, services, dependency injection, testing, file organization, comments. Loaded only when Python code is touched.",
+      "author": {
+        "name": "Dmitry Tatarkin"
+      },
+      "source": "./plugins/python-rules",
+      "category": "conventions"
+    },
+    {
+      "name": "logging-rules",
+      "description": "Logging conventions — event-name messages, structured context, error and level usage, and centralized configuration. Loaded only when logging code is touched.",
+      "author": {
+        "name": "Dmitry Tatarkin"
+      },
+      "source": "./plugins/logging-rules",
+      "category": "conventions"
+    },
+    {
+      "name": "lint-rules",
+      "description": "The house lint standard — the checks a repository runs, derived from its own signals; one tool per concern; canonical hook entries that carry no version numbers, and the procedure that supplies them; how a local hook finds its tool; and when a whole repository is brought into line. Loaded when a lint configuration is touched, or when a repository's quality gates are converged.",
+      "author": {
+        "name": "Dmitry Tatarkin"
+      },
+      "source": "./plugins/lint-rules",
+      "category": "conventions"
+    },
+    {
+      "name": "clickhouse-rules",
+      "description": "ClickHouse conventions — reading merge-time-deduplicated tables without FINAL (argMax / LIMIT 1 BY in SQL), write-once facts and cheap version columns. Loaded only when ClickHouse queries or table DDL are touched.",
+      "author": {
+        "name": "Dmitry Tatarkin"
+      },
+      "source": "./plugins/clickhouse-rules",
+      "category": "conventions"
+    },
+    {
+      "name": "django-rules",
+      "description": "Rules and patterns for Django code — models, django-ninja APIs, and migrations. Loaded only when Django code is touched.",
+      "author": {
+        "name": "Dmitry Tatarkin"
+      },
+      "source": "./plugins/django-rules",
+      "category": "conventions"
+    },
+    {
+      "name": "just-rules",
+      "description": "Justfile conventions — reuse of shared modules, the module preamble, recipe attributes and bodies, argument fidelity and recipe-to-recipe calls, and per-project entrypoint files. Loaded only when a justfile is touched.",
+      "author": {
+        "name": "Dmitry Tatarkin"
+      },
+      "source": "./plugins/just-rules",
+      "category": "conventions"
+    },
+    {
+      "name": "metabase-rules",
+      "description": "Rules for working with Metabase — MBQL-first query authoring, personal-collection placement, and dashboards and questions kept as code with Terraform. Loaded when creating or updating Metabase entities by any mechanism, not by touching a code subtree.",
+      "author": {
+        "name": "Dmitry Tatarkin"
+      },
+      "source": "./plugins/metabase-rules",
+      "category": "conventions"
+    },
+    {
+      "name": "redis-rules",
+      "description": "Redis usage patterns — distributed locking with redis-py's Lock (acquire/release, TTL, key naming, worker-task contention). Loaded only when Redis coordination code is touched.",
+      "author": {
+        "name": "Dmitry Tatarkin"
+      },
+      "source": "./plugins/redis-rules",
+      "category": "conventions"
+    }
+  ]
 }

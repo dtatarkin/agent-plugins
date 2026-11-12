@@ -3,10 +3,47 @@
 Agent plugins that carry coding conventions, for Claude Code, Codex and the
 Antigravity CLI.
 
-The repository holds no plugin yet. The marketplace files for Claude Code
-(`.claude-plugin/marketplace.json`) and Codex (`.agents/plugins/marketplace.json`)
-are in place and list nothing; install instructions arrive with the first
-plugins.
+## Plugins
+
+- `python-rules`: general Python conventions, from typing to tests.
+- `logging-rules`: log call sites and centralized logging configuration.
+- `lint-rules`: the house lint standard, with hooks that check lint
+  configuration as it is edited.
+- `clickhouse-rules`: reading deduplicated ClickHouse tables, and table design.
+- `django-rules`: Django models, django-ninja APIs, admin, settings and tests.
+- `just-rules`: justfile conventions, with hooks that check justfiles as they
+  are edited.
+- `metabase-rules`: Metabase queries, collections, and content kept as code.
+- `redis-rules`: distributed locking with Redis.
+
+## Install in Claude Code
+
+```text
+/plugin marketplace add dtatarkin/agent-plugins
+/plugin install <name>@agent-plugins
+```
+
+The Codex marketplace file (`.agents/plugins/marketplace.json`) lists nothing
+yet.
+
+## Install the checkers
+
+`lint-rules` and `just-rules` run their checks through two console scripts,
+`lint-lint` and `just-lint`, which this repository's Python package provides:
+
+```sh
+uv tool install git+https://github.com/dtatarkin/agent-plugins
+```
+
+Both plugins work without them: their hooks then check nothing, and one notice
+at session start says so.
+
+## Development
+
+```sh
+uv sync
+uv run pytest
+```
 
 ## Contributing
 

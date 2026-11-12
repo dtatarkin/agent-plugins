@@ -1,0 +1,7 @@
+{
+  "name": "just-rules",
+  "description": "Justfile conventions — reuse of shared modules, the module preamble, recipe attributes and bodies, argument fidelity and recipe-to-recipe calls, and per-project entrypoint files. Loaded only when a justfile is touched.",
+  "version": "0.1.1",
+  "author": { "name": "Dmitry Tatarkin", "email": "tatarkin@gmail.com" },
+  "keywords": ["just", "justfile", "conventions", "rules", "patterns"]
+}

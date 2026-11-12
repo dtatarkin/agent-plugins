@@ -1,0 +1,48 @@
+{
+  "description": "Justfile checks: a baseline before this context first edits a file, the violations each edit introduced reported after it, and one turn-end gate while any remain. Without `just-lint` on PATH every hook stays silent and one notice at session start says so.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["--notice", "just-lint", "just-rules"] }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "if": "Edit(**/justfile)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/*.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
+          { "type": "command", "if": "Write(**/justfile)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
+          { "type": "command", "if": "Write(**/*.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "if": "Edit(**/justfile)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/*.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
+          { "type": "command", "if": "Write(**/justfile)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
+          { "type": "command", "if": "Write(**/*.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] }
+        ]
+      }
+    ]
+  }
+}

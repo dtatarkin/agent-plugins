@@ -213,6 +213,18 @@ tests fail": no hook runs the suite at commit, and the spec says what is true.
 `.venv/`, `__pycache__/`, `dist/`, `*.egg-info/`, `.idea/`. The tool caches carry their own `.gitignore`. `.idea/`
 holds machine-local IDE state and must never be staged.
 
+### D12: `category` leaves the eight Claude plugin manifests
+
+Every imported `.claude-plugin/plugin.json` carried `"category": "conventions"`. Claude Code 2.1.322 warns that the
+field belongs in the marketplace entry and is ignored at load time, and `claude plugin validate --strict` turns that
+warning into a failure: on the marketplace and on each of the eight plugins (measured 2026-11-12; the same CLI fails
+the source's copies the same way). The field is therefore deleted from the eight Claude manifests. The marketplace
+entries keep it (D8), and the portable root manifests never had it. This is the one way the manifests differ from the
+copies beyond D7's version bumps. Ruled by the owner on 2026-11-12.
+
+Alternative considered: keep the copies as they are and check with plain `validate`. Rejected, because the warning
+names a field nothing reads, and the strict check is what holds the manifests to the CLI from here on.
+
 ## Risks / Trade-offs
 
 - **[The newer spelling and markdown fixers rewrite imported text]**
@@ -235,6 +247,15 @@ holds machine-local IDE state and must never be staged.
   - Why: the README's GitHub install lines need credentials until then.
   - Mitigation: verify the package builds and installs from the working tree (`uv build`; `uvx --from . lint-lint
     --help`). The install from GitHub is exercised when the repository goes public.
+- **[`claude plugin validate --strict` rejects `category` in a Claude manifest]** (found by the section 2 applier,
+  2026-11-12, Claude Code 2.1.322)
+  - What: every imported `.claude-plugin/plugin.json` carries `"category": "conventions"`. The CLI now warns that the
+    field belongs in the marketplace entry and is ignored at load time, and `--strict` turns the warning into a
+    failure. Task 2.4's `--strict` checks therefore fail: on the marketplace (eight warnings, one per plugin) and on
+    each of the eight plugins. The same CLI fails the source's own `plugins/lint-rules` under `--strict` for the same
+    reason. Without `--strict`, the marketplace and all eight plugins pass here.
+  - Mitigation: D12. With `category` deleted from the eight Claude manifests, the marketplace and the plugins pass
+    `--strict`. The plugin-directory `ICON_MISSING` note does not affect the result.
 
 ## Migration Plan
 
@@ -275,3 +296,9 @@ outside this repository changes.
 - **A12 (section 1 applier):** `pyproject.toml`'s `description` and the comments above the two console scripts are
   written for this package. They restate the source's reasons (a plain function, so the hook path imports no `typer`)
   without its list of other scripts and dependencies.
+- **A13 (section 2 applier):** in `test_rule_frontmatter.py`, the `frontmatter_violations` docstring also spoke of a
+  "linkable" file that is "never linked", so it was restated with the three D6 names. The violation message
+  `linked file imports:` and the test names stay: they are behaviour and identifiers, which D6 leaves alone.
+- **A14 (section 2 applier):** D12 bumps no version. The six plugins other than `lint-rules` and `just-rules` stay at
+  their source versions: the deleted field was ignored at load time, so nothing an installed plugin does changes, and
+  this marketplace publishes them for the first time. `lint-rules` and `just-rules` carry D7's bumps only.

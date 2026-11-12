@@ -1,0 +1,156 @@
+{
+  "description": "Lint-configuration checks: a baseline before this context first edits a file the lint topics attach on, the findings each edit introduced reported after it, and one turn-end gate while any remain. Without `lint-lint` on PATH every hook stays silent and one notice at session start says so.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["--notice", "lint-lint", "lint-rules"] }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "if": "Edit(**/.pre-commit-config.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/_typos.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.typos.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.gitleaks.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/ruff.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.ruff.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/mypy.ini)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.mypy.ini)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/ty.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.yamllint)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.yamllint.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.yamllint.yml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.taplo.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/taplo.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.rumdl.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.shellcheckrc)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.tflint.hcl)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.checkov.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.checkov.yml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/trivy.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.trivyignore)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.ansible-lint)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.hadolint.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/eslint.config.*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.eslintrc*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.prettierrc*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/prettier.config.*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.sqlfluff)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.sqlfluffignore)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.pre-commit-config.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/_typos.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.typos.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.gitleaks.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/ruff.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.ruff.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/mypy.ini)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.mypy.ini)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/ty.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.yamllint)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.yamllint.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.yamllint.yml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.taplo.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/taplo.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.rumdl.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.shellcheckrc)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.tflint.hcl)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.checkov.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.checkov.yml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/trivy.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.trivyignore)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.ansible-lint)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.hadolint.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/eslint.config.*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.eslintrc*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.prettierrc*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/prettier.config.*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.sqlfluff)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.sqlfluffignore)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "if": "Edit(**/.pre-commit-config.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/_typos.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.typos.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.gitleaks.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/ruff.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.ruff.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/mypy.ini)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.mypy.ini)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/ty.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.yamllint)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.yamllint.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.yamllint.yml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.taplo.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/taplo.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.rumdl.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.shellcheckrc)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.tflint.hcl)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.checkov.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.checkov.yml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/trivy.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.trivyignore)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.ansible-lint)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.hadolint.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/eslint.config.*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.eslintrc*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.prettierrc*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/prettier.config.*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.sqlfluff)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.sqlfluffignore)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.pre-commit-config.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/_typos.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.typos.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.gitleaks.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/ruff.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.ruff.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/mypy.ini)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.mypy.ini)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/ty.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.yamllint)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.yamllint.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.yamllint.yml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.taplo.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/taplo.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.rumdl.toml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.shellcheckrc)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.tflint.hcl)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.checkov.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.checkov.yml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/trivy.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.trivyignore)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.ansible-lint)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.hadolint.yaml)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/eslint.config.*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.eslintrc*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.prettierrc*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/prettier.config.*)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.sqlfluff)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.sqlfluffignore)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["lint-lint", "hook"] }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "just-rules",
+  "version": "0.1.1",
+  "description": "Justfile conventions — reuse of shared modules, the module preamble, recipe attributes and bodies, argument fidelity and recipe-to-recipe calls, and per-project entrypoint files. Loaded only when a justfile is touched.",
+  "author": {
+    "name": "Dmitry Tatarkin",
+    "email": "tatarkin@gmail.com"
+  },
+  "keywords": [
+    "just",
+    "justfile",
+    "conventions",
+    "rules",
+    "patterns"
+  ]
+}

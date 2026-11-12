@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "redis-rules",
+  "version": "0.1.0",
+  "description": "Redis usage patterns — distributed locking with redis-py's Lock (acquire/release, TTL, key naming, worker-task contention). Loaded only when Redis coordination code is touched.",
+  "author": {
+    "name": "Dmitry Tatarkin",
+    "email": "tatarkin@gmail.com"
+  },
+  "keywords": [
+    "redis",
+    "locking",
+    "concurrency",
+    "conventions",
+    "rules",
+    "patterns"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "logging-rules",
+  "description": "Logging conventions — event-name messages, structured context, error and level usage at call sites, plus centralized configuration. Framework-independent. Loaded only when logging code is touched.",
+  "version": "0.1.0",
+  "author": { "name": "Dmitry Tatarkin", "email": "tatarkin@gmail.com" },
+  "keywords": ["logging", "structlog", "conventions", "rules", "patterns"]
+}

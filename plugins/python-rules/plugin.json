@@ -1,0 +1,16 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "python-rules",
+  "version": "0.1.0",
+  "description": "General Python conventions and patterns — typing, configuration, command-line interfaces, error handling, services, dependency injection, testing, file organization, comments. Framework-independent. Loaded only when Python code is touched.",
+  "author": {
+    "name": "Dmitry Tatarkin",
+    "email": "tatarkin@gmail.com"
+  },
+  "keywords": [
+    "python",
+    "conventions",
+    "rules",
+    "patterns"
+  ]
+}

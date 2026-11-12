@@ -1,0 +1,7 @@
+{
+  "name": "metabase-rules",
+  "description": "Rules for working with Metabase — MBQL-first query authoring, personal-collection placement, and dashboards and questions kept as code with Terraform. Loaded when creating or updating Metabase entities, by any mechanism, or handling Metabase content kept as code.",
+  "version": "0.2.0",
+  "author": { "name": "Dmitry Tatarkin", "email": "tatarkin@gmail.com" },
+  "keywords": ["metabase", "conventions", "rules", "mbql", "collections", "terraform", "content-as-code"]
+}

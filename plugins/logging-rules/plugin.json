@@ -1,0 +1,17 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "logging-rules",
+  "version": "0.1.0",
+  "description": "Logging conventions — event-name messages, structured context, error and level usage at call sites, plus centralized configuration. Framework-independent. Loaded only when logging code is touched.",
+  "author": {
+    "name": "Dmitry Tatarkin",
+    "email": "tatarkin@gmail.com"
+  },
+  "keywords": [
+    "logging",
+    "structlog",
+    "conventions",
+    "rules",
+    "patterns"
+  ]
+}

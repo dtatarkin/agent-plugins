@@ -46,28 +46,28 @@ current branch with every hook run, the private-names guard included. Nothing is
 
 ## 2. The eight plugins, their tests, marketplace and README
 
-- [ ] 2.1 Copy `$SOURCE/plugins/<name>/` for `python-rules`, `logging-rules`, `lint-rules`, `clickhouse-rules`,
+- [x] 2.1 Copy `$SOURCE/plugins/<name>/` for `python-rules`, `logging-rules`, `lint-rules`, `clickhouse-rules`,
   `django-rules`, `just-rules`, `metabase-rules` and `redis-rules` into `plugins/`, keeping modes. Verify:
   - `git ls-files -s` (after staging) shows both `hooks/run-checker` as `100755`;
   - `diff -r` against the source shows no difference before the next task.
-- [ ] 2.2 Write design.md D7's install line into both `plugins/{lint,just}-rules/hooks/run-checker`, and bump
+- [x] 2.2 Write design.md D7's install line into both `plugins/{lint,just}-rules/hooks/run-checker`, and bump
   `lint-rules` to 0.4.1 and `just-rules` to 0.1.1 in both manifests of each. Verify:
   - `cmp` of the two scripts reports them identical;
   - `printf '{}' | env PATH=/usr/bin:/bin plugins/lint-rules/hooks/run-checker --notice zz-absent-tool lint-rules |
     python3 -m json.tool` parses and shows the URL;
   - `jq .version` agrees across each plugin's two manifests.
-- [ ] 2.3 Copy the source's `tests/plugins/__init__.py`, `test_lint_hook_filters.py`, `test_hook_guard.py`,
+- [x] 2.3 Copy the source's `tests/plugins/__init__.py`, `test_lint_hook_filters.py`, `test_hook_guard.py`,
   `test_portable_manifests.py`, `test_rule_frontmatter.py` and `test_hook_manifests.py`. Also copy
   `tests/lintlint/test_citations.py` and `tests/justlint/test_citations.py`. Apply D2's rename. Reword
   `test_rule_frontmatter.py`'s docstrings as D6 says, and add the URL assertion to `test_hook_guard.py` (D7). Verify:
   - `command grep -rnE '\b[a-z]+_ai\.|link-rules|link recipe' tests/plugins/` finds nothing;
   - `uv run pytest tests/plugins tests/lintlint/test_citations.py tests/justlint/test_citations.py` passes;
   - with the notice line reverted to the generic hint, the URL assertion fails (then restore it).
-- [ ] 2.4 List the eight in `.claude-plugin/marketplace.json` as design.md D8 gives the entries. Verify:
+- [x] 2.4 List the eight in `.claude-plugin/marketplace.json` as design.md D8 gives the entries. Verify:
   - `jq '.plugins | length'` prints 8, and each `source` names an existing directory;
   - `claude plugin validate --strict .` passes, and so does `claude plugin validate --strict plugins/<name>` for each
     of the eight. If the CLI rejects something the source accepted, record it under design.md *Risks* and stop.
-- [ ] 2.5 Rewrite `README.md`. Replace the "holds no plugin yet" paragraph with:
+- [x] 2.5 Rewrite `README.md`. Replace the "holds no plugin yet" paragraph with:
   - a list of the eight plugins, one line each;
   - the Claude Code install (`/plugin marketplace add dtatarkin/agent-plugins`, then
     `/plugin install <name>@agent-plugins`);
@@ -78,14 +78,14 @@ current branch with every hook run, the private-names guard included. Nothing is
   Keep the hook section. Verify:
   - `prek run rumdl-check --files README.md` passes;
   - the install line matches the one in both `run-checker` scripts character for character.
-- [ ] 2.6 Stage the section's files, run `prek run typos --all-files` alone and read the whole `git diff`, as in 1.5.
+- [x] 2.6 Stage the section's files, run `prek run typos --all-files` alone and read the whole `git diff`, as in 1.5.
   Then run `prek run --all-files`, re-reading every markdown fix in the plugins against the source. Verify:
   - a second `prek run --all-files` changes nothing and passes;
   - `uv run pytest` passes in full;
   - `uv run lint-lint check .` and `uv run just-lint check .` report nothing;
   - `uv build` succeeds;
   - `uvx --from . lint-lint --help` runs.
-- [ ] 2.7 Commit the section as `plugins: import the eight conventions plugins`. Then run
+- [x] 2.7 Commit the section as `plugins: import the eight conventions plugins`. Then run
   `scripts/check-private-names --history`. Verify:
   - the commit passes every hook;
   - the history sweep exits 0;

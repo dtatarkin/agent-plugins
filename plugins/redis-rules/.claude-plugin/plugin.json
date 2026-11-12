@@ -1,0 +1,7 @@
+{
+  "name": "redis-rules",
+  "description": "Redis usage patterns — distributed locking with redis-py's Lock (acquire/release, TTL, key naming, worker-task contention). Loaded only when Redis coordination code is touched.",
+  "version": "0.1.0",
+  "author": { "name": "Dmitry Tatarkin", "email": "tatarkin@gmail.com" },
+  "keywords": ["redis", "locking", "concurrency", "conventions", "rules", "patterns"]
+}

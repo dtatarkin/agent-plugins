@@ -1,0 +1,7 @@
+{
+  "name": "python-rules",
+  "description": "General Python conventions and patterns — typing, configuration, command-line interfaces, error handling, services, dependency injection, testing, file organization, comments. Framework-independent. Loaded only when Python code is touched.",
+  "version": "0.1.0",
+  "author": { "name": "Dmitry Tatarkin", "email": "tatarkin@gmail.com" },
+  "keywords": ["python", "conventions", "rules", "patterns"]
+}

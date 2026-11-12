@@ -1,0 +1,7 @@
+{
+  "name": "clickhouse-rules",
+  "description": "ClickHouse conventions — reading merge-time-deduplicated tables without FINAL (argMax / LIMIT 1 BY in SQL), write-once facts and cheap version columns; joins with a small filtered right side, dictionaries for lookups, denormalization at write time. Loaded only when ClickHouse queries or table DDL are touched.",
+  "version": "0.1.0",
+  "author": { "name": "Dmitry Tatarkin", "email": "tatarkin@gmail.com" },
+  "keywords": ["clickhouse", "sql", "deduplication", "joins", "conventions", "rules", "patterns"]
+}

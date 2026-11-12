@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "lint-rules",
+  "version": "0.4.1",
+  "description": "The house lint standard — which checks a repository runs, derived from its own signals; one tool per concern; canonical hook entries carrying no version numbers, and the procedure that supplies them; how a local hook finds its tool; and when a whole repository is brought into line. Load when writing or changing a lint configuration, or when asked to converge a repository's quality gates.",
+  "author": {
+    "name": "Dmitry Tatarkin",
+    "email": "tatarkin@gmail.com"
+  },
+  "keywords": [
+    "lint",
+    "pre-commit",
+    "hooks",
+    "quality-gates",
+    "conventions",
+    "rules"
+  ]
+}

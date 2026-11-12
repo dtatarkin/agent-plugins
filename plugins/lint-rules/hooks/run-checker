@@ -1,0 +1,25 @@
+#!/bin/sh
+# A script run in exec form, so that no project's shell prefix ever wraps the
+# check for whether the checker is installed.
+
+if [ "$1" = "--notice" ]; then
+  tool=$2
+  plugin=$3
+  cat >/dev/null
+  if command -v "$tool" >/dev/null 2>&1; then
+    exit 0
+  fi
+  tick='`'
+  message="$plugin: $tick$tool$tick is not on PATH, so this plugin's checks are off. Install it with ${tick}uv tool install git+https://github.com/dtatarkin/agent-plugins$tick; the checks resume once it is on the PATH Claude Code runs with."
+  context="$plugin: $tick$tool$tick is not on PATH, so this plugin's hooks check nothing in this session: no findings follow your edits and no turn-end gate runs. Its rules still apply; $tick$tool check$tick is unavailable too."
+  printf '{"systemMessage": "%s", "hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "%s"}}\n' \
+    "$message" "$context"
+  exit 0
+fi
+
+tool=$1
+if command -v "$tool" >/dev/null 2>&1; then
+  exec "$@"
+fi
+cat >/dev/null
+exit 0
