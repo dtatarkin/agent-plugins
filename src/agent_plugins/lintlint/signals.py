@@ -42,6 +42,7 @@ from agent_plugins.lintlint.consts import (
     TESTS_DIR,
     WEB_MANIFEST,
     WEB_SOURCE_SUFFIXES,
+    WORKFLOWS_DIR,
     YAML_SUFFIXES,
 )
 from agent_plugins.lintlint.errors import GitMissing, NotARepository
@@ -117,6 +118,8 @@ def derive(repository: Repository, exclude: str | None = None) -> Signals:
         present.add(Signal.CLAUDE_MANIFEST)
     if any(_is_portable_manifest(repository.root, path) for path in paths):
         present.add(Signal.PORTABLE_MANIFEST)
+    if any(path.parent == WORKFLOWS_DIR and path.suffix in YAML_SUFFIXES for path in paths):
+        present.add(Signal.WORKFLOWS)
 
     pairs = list(_node_lockfile_pairs(paths))
     executors = frozenset(

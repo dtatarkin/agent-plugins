@@ -242,6 +242,26 @@ class TestPluginManifests:
         assert not signals_of(lint_tree({path: "{}"})).present & MANIFEST_SIGNALS
 
 
+class TestWorkflows:
+    @pytest.mark.parametrize("path", [".github/workflows/ci.yml", ".github/workflows/release.yaml"])
+    def test_a_workflow_carries_the_signal(self, lint_tree: Tree, path: str) -> None:
+        assert Signal.WORKFLOWS in signals_of(lint_tree({path: "on: push\n"})).present
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            ".github/workflows/nested/ci.yml",
+            ".github/workflows/README.md",
+            "action.yml",
+            ".github/actions/setup/action.yml",
+            ".github/dependabot.yml",
+            "sub/.github/workflows/ci.yml",
+        ],
+    )
+    def test_other_files_do_not(self, lint_tree: Tree, path: str) -> None:
+        assert Signal.WORKFLOWS not in signals_of(lint_tree({path: "on: push\n"})).present
+
+
 class TestExcludedFiles:
     def test_a_file_every_hook_excludes_carries_no_content_signal(self, lint_tree: Tree) -> None:
         tree = lint_tree({"vendor/lib/Dockerfile": "", "vendor/lib/main.tf": ""})

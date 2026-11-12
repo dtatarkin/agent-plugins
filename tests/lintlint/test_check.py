@@ -56,6 +56,105 @@ DRIFTED = {
 }
 
 
+# A repository holding nothing but a workflow: the baseline, the markup set its
+# YAML derives, and the CI trio.
+WORKFLOW_REPOSITORY = {
+    ".github/workflows/ci.yml": "on: push\njobs: {}\n",
+    ".yamllint.yaml": (
+        "extends: default\n\nrules:\n  document-start: disable\n  line-length:\n    max: 120\n"
+    ),
+    ".rumdl.toml": (
+        "[MD013]\nline_length = 120\ntables = false\ncode_blocks = false\n\n"
+        "[MD041]\nenabled = false\n"
+    ),
+    ".pre-commit-config.yaml": """\
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: debug-statements
+      - id: detect-private-key
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.52.0
+    hooks:
+      - id: typos
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [--strict]
+
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
+    hooks:
+      - id: taplo-format
+
+  - repo: https://github.com/rvben/rumdl-pre-commit
+    rev: v0.3.2
+    hooks:
+      - id: rumdl-check
+        args: [--fix]
+
+  - repo: https://github.com/lycheeverse/lychee
+    rev: lychee-v0.24.2
+    hooks:
+      - id: lychee
+        args: [--offline, --no-progress]
+        types: [markdown]
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.24.1
+    hooks:
+      - id: zizmor
+        args: [--offline, --no-progress]
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.39.0
+    hooks:
+      - id: check-github-workflows
+
+  - repo: local
+    hooks:
+      - id: format-justfile
+        name: format justfile
+        entry: bash -c 'for f in "$@"; do just --fmt --unstable --justfile "$f"; done' --
+        language: system
+        files: (^|/)justfile$|\\.just$
+      - id: nixfmt
+        name: nixfmt
+        entry: nixfmt
+        language: system
+        files: \\.nix$
+""",
+}
+
+
 class TestAudit:
     def test_a_converged_repository_exits_zero_and_says_nothing(self, lint_data_tree: Tree) -> None:
         result = CliRunner().invoke(app, ["check", str(lint_data_tree("compliant"))])
@@ -120,6 +219,14 @@ class TestAudit:
         tree = lint_data_tree("drifted")
         (tree / "deep").mkdir()
         assert audit(tree / "deep") == audit(tree)
+
+    def test_a_repository_with_a_workflow_and_the_ci_trio_is_clean(
+        self, lint_tree: Callable[..., Path]
+    ) -> None:
+        tree = lint_tree(WORKFLOW_REPOSITORY)
+        assert audit(tree) == []
+        result = CliRunner().invoke(app, ["check", str(tree)])
+        assert result.exit_code == 0
 
 
 class TestUmbrella:

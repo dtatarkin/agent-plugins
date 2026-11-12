@@ -2,6 +2,7 @@
 
 import re
 from datetime import timedelta
+from pathlib import PurePosixPath
 
 from agent_plugins.lintlint.types import (
     Canon,
@@ -91,6 +92,10 @@ HOUSE_HOOKS: tuple[HouseHook, ...] = (
     HouseHook("check-model-has-tests", "data", Signal.DATA),
     HouseHook("check-jsonschema", "agent-plugins", Signal.PORTABLE_MANIFEST),
     HouseHook("claude-plugin-validate", "agent-plugins", Signal.CLAUDE_MANIFEST),
+    *(
+        HouseHook(hook_id, "ci", Signal.WORKFLOWS)
+        for hook_id in ("actionlint", "zizmor", "check-github-workflows")
+    ),
 )
 
 # Tools the standard retires, found by hook id or as a word of a local entry.
@@ -156,6 +161,8 @@ HOOK_CANON: dict[str, Canon] = {
     # Handed the manifests it matches, so manual without `always_run`.
     "check-jsonschema": Canon("agent-plugins", manual=True),
     "claude-plugin-validate": Canon("agent-plugins", flags=("--strict",)),
+    # Supplying `args:` replaces upstream's `--no-progress`, so both are canon.
+    "zizmor": Canon("ci", flags=("--offline", "--no-progress")),
 }
 
 # The generic schema checker is the house hook only when pointed at the Agent
@@ -308,6 +315,9 @@ CLAUDE_PLUGIN_DIR = ".claude-plugin"
 CLAUDE_MANIFESTS = frozenset({"plugin.json", "marketplace.json"})
 PORTABLE_MANIFEST = "plugin.json"
 SCHEMA_KEY = "$schema"
+# The one directory the host reads workflows from, at the repository's root; an
+# action's metadata file and the dependabot file carry no signal.
+WORKFLOWS_DIR = PurePosixPath(".github/workflows")
 
 # Git's mode for a nested repository's entry in the listing, and an executable.
 GITLINK_MODE = "160000"

@@ -58,6 +58,7 @@ class Signal(StrEnum):
     DATA = "data"
     CLAUDE_MANIFEST = "claude-manifest"
     PORTABLE_MANIFEST = "portable-manifest"
+    WORKFLOWS = "workflows"
 
 
 @dataclass(frozen=True)

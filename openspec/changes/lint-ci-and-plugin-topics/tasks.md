@@ -102,7 +102,7 @@ that stay there (design.md A5). Searches use `git grep` or `command grep`.
 
 ## 4. CI set, proven by tests
 
-- [ ] 4.1 Derive the workflows signal per design.md D5, and add `actionlint`, `zizmor` (flags `--offline`,
+- [x] 4.1 Derive the workflows signal per design.md D5, and add `actionlint`, `zizmor` (flags `--offline`,
   `--no-progress`) and `check-github-workflows` to `HOUSE_HOOKS` and `HOOK_CANON` under topic `ci`. Tests:
   - in `test_signals.py`: a workflow under `.github/workflows/` carries the signal, and a nested file, `action.yml` or
     `.github/dependabot.yml` does not;

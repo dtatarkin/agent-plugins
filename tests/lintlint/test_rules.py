@@ -499,6 +499,70 @@ class TestAgentPlugins:
         assert "always_run" in findings[0].detail
 
 
+WORKFLOW = {".github/workflows/ci.yml": "on: push\njobs: {}\n"}
+
+CI_HOOKS = """
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.24.1
+    hooks:
+      - id: zizmor
+        args: [--offline, --no-progress]
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.39.0
+    hooks:
+      - id: check-github-workflows
+"""
+
+CI_IDS = ("actionlint", "zizmor", "check-github-workflows")
+
+
+def add_ci_hooks(tree: Path) -> None:
+    with (tree / CONFIG).open("a") as stream:
+        stream.write(CI_HOOKS)
+
+
+class TestCi:
+    def test_a_workflow_with_none_of_the_trio(self, tree: Path) -> None:
+        track(tree, WORKFLOW)
+        findings = audit(tree)
+        assert pairs(findings) == {(hook, "missing-hook") for hook in CI_IDS}
+        assert {finding.topic for finding in findings} == {"ci"}
+
+    def test_a_workflow_with_the_trio_is_clean(self, tree: Path) -> None:
+        track(tree, WORKFLOW)
+        add_ci_hooks(tree)
+        assert audit(tree) == []
+
+    @pytest.mark.parametrize(
+        ("kept", "dropped"), [("--no-progress", "--offline"), ("--offline", "--no-progress")]
+    )
+    def test_the_auditor_without_a_flag(self, tree: Path, kept: str, dropped: str) -> None:
+        track(tree, WORKFLOW)
+        add_ci_hooks(tree)
+        edit(
+            tree,
+            "zizmor\n        args: [--offline, --no-progress]",
+            f"zizmor\n        args: [{kept}]",
+        )
+        findings = audit(tree)
+        assert pairs(findings) == {("zizmor", "hook-args")}
+        assert dropped in findings[0].detail
+
+    def test_the_trio_without_a_workflow_is_stray(self, tree: Path) -> None:
+        add_ci_hooks(tree)
+        assert pairs(audit(tree)) == {(hook, "stray-hook") for hook in CI_IDS}
+
+    def test_an_action_or_dependabot_file_derives_none(self, tree: Path) -> None:
+        track(tree, {"action.yml": "name: a\n", ".github/dependabot.yml": "version: 2\n"})
+        assert audit(tree) == []
+
+
 class TestForm:
     def test_a_locked_tree_s_by_name_entry(self, tree: Path) -> None:
         edit(tree, "entry: uv run mypy", "entry: mypy")
