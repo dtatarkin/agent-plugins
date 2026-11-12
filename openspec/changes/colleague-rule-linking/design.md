@@ -182,3 +182,17 @@ and that it never replaces a file or link it did not make.
   touch.
 - A3. No section of this change commits; the applier's workflow does. Nothing in
   any artifact, file or message names a repository other than this one.
+- A4. Decided in apply: a plugin argument that is empty, `.`, `..` or holds a
+  `/` is an unknown plugin (exit 2) even when it names a directory, so an
+  argument always names exactly one directory under `plugins/`.
+- A5. Decided in apply: `-h`/`--help` takes no further argument; one given is a
+  usage error (exit 2).
+- A6. Decided in apply: an `ln` or `rm` that fails stops the run with exit 2
+  (cannot run), not 1, which stays reserved for D5's skipped names.
+- A7. Decided in apply: `--unlink` with no rules directory does nothing, creates
+  nothing and exits 0.
+- A8. Decided in apply: the scenario "A plugin is installed" is tested
+  statically, by asserting that no file under `plugins/` is named or mentions
+  `link-rules`; the hook configuration's own absence of it is visible in review.
+  The real-tree smoke test takes the scoped set from the contract test's own
+  detection (`declares_paths`), so it pins no count.
