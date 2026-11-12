@@ -11,7 +11,7 @@ that stay there (design.md A5). Searches use `git grep` or `command grep`.
 
 ## 1. Spike, topics and version bump
 
-- [ ] 1.1 Pick `check-jsonschema`'s release by the cooldown (the newest tag of
+- [x] 1.1 Pick `check-jsonschema`'s release by the cooldown (the newest tag of
   `python-jsonschema/check-jsonschema` at least seven days old; check its date by hand per `versions.md`). Then run the
   measurement:
   1. Online, run `uvx --from check-jsonschema==<version> check-jsonschema --schemafile <the $schema URL> <every
@@ -24,17 +24,17 @@ that stay there (design.md A5). Searches use `git grep` or `command grep`.
   - If the offline run **passes**, record that and stop this section for the lead (design.md D1).
 
   Verify: `## Measurements` holds both results, and the online run exited 0.
-- [ ] 1.2 Write `plugins/lint-rules/skills/lint/references/ci.md` per design.md D6 and D8: the workflows signal, the
+- [x] 1.2 Write `plugins/lint-rules/skills/lint/references/ci.md` per design.md D6 and D8: the workflows signal, the
   three entries with `id: actionlint`, `id: zizmor` (args `--offline`, `--no-progress`) and
   `id: check-github-workflows`, one concern each, and zizmor's filter. Front matter: `paths:
   ["**/.pre-commit-config.yaml"]`. Verify: `uv run pytest tests/plugins` passes, and the file states no version
   (`command grep -nE 'v?[0-9]+\.[0-9]+' <file>` finds none).
-- [ ] 1.3 Write `references/agent-plugins.md` per D1, D2, D3, D6 and D8: the two manifest signals; the hosted
+- [x] 1.3 Write `references/agent-plugins.md` per D1, D2, D3, D6 and D8: the two manifest signals; the hosted
   `id: check-jsonschema` entry, with `--schemafile` described as the URL the manifest's `$schema` declares (no literal
   URL); the manual stage and its `prek run --hook-stage manual check-jsonschema --all-files`; the local
   `id: claude-plugin-validate` loop with `--strict`; and that a missing `claude` is an environment failure. Same
   `paths:`. Verify: as in 1.2.
-- [ ] 1.4 Edit the existing topics:
+- [x] 1.4 Edit the existing topics:
   - `markup.md` gains a `## Links` section with `id: lychee`, args `--offline`, `--no-progress`, `types: [markdown]`,
     and the args trap (D4);
   - `applying.md` gains the two signals-table rows;
@@ -44,7 +44,7 @@ that stay there (design.md A5). Searches use `git grep` or `command grep`.
 
   Verify: `uv run pytest tests/plugins tests/lintlint/test_citations.py` passes, and `prek run --all-files` leaves no
   rewritten file.
-- [ ] 1.5 Bump `lint-rules` to 0.5.0 in `plugins/lint-rules/plugin.json` and `plugins/lint-rules/.claude-plugin/plugin.json`
+- [x] 1.5 Bump `lint-rules` to 0.5.0 in `plugins/lint-rules/plugin.json` and `plugins/lint-rules/.claude-plugin/plugin.json`
   (D10). Verify: `claude plugin validate --strict plugins/lint-rules` passes, and `uv run pytest
   tests/plugins/test_portable_manifests.py` passes.
 

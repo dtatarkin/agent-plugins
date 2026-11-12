@@ -35,6 +35,10 @@ That command is the whole interface: the standard asks for nothing beside the
 hook, so a manual check is runnable in every repository that carries it,
 whatever else the repository has.
 
+A manual check that is handed files — one that keeps its filter and has no
+`always_run` — runs with `--all-files`; otherwise it is handed only the staged
+files, which on a clean tree is none.
+
 ## A whole-program check is not handed the file list
 
 A check that reasons over the whole program — a type checker, a project-wide

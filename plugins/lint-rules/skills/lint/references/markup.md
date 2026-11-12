@@ -133,6 +133,38 @@ span. Do this *before* the first run, not after: otherwise the fixer rewrites
 prose the author did not intend to change, and the diff hides among the
 formatting.
 
+## Links
+
+```yaml
+  - repo: https://github.com/lycheeverse/lychee
+    hooks:
+      - id: lychee
+        args: [--offline, --no-progress]
+        types: [markdown]
+```
+
+A relative link that does not resolve fails the commit. This is its own
+concern, beside markdown style: the markdown linter reads how a page is
+written, and this reads whether what it points at is there.
+
+- **`--offline`** limits the check to local targets, so a commit never waits
+  on a remote host and never fails because one is down. Fragments stay
+  unchecked, the tool's default, which leaves anchors to the markdown linter.
+- **The args trap.** `args:` replaces upstream's, which are `--no-progress`
+  alone, so the entry writes both flags; with `--offline` only, the progress
+  output comes back.
+- **`types: [markdown]`** narrows upstream's filter, which hands it every text
+  file.
+- **The hosted script hook**, not its system or container variants: the
+  system one needs a declared install on every committing machine, the
+  container one a running daemon at commit. The script hook installs the tool
+  into its own checkout on the first run, which needs the network once; later
+  runs reuse it.
+
+A dead link inside a frozen archive is history, not a finding to fix: exclude
+the archive on this hook, by the pattern the rewriting hooks already carry,
+rather than rewrite it.
+
 ## Tools that leave
 
 Retire, on sight, in a converged repository: a general-purpose formatter

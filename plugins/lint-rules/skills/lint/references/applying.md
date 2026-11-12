@@ -57,6 +57,8 @@ Derive the set from the tree. Never copy another repository's configuration.
 | any `*.tf`, Ansible content (an `ansible/` directory, a collection manifest, or a role's tasks under `roles/`), a `Dockerfile`, a helm chart, or Kubernetes manifests | infrastructure |
 | `package.json` beside a package manager's lockfile, with a TypeScript or JavaScript file under it that the configuration's top-level exclusion leaves to the hooks | web |
 | a dbt project file | data |
+| a YAML file directly under `.github/workflows/` | CI |
+| a `plugin.json` outside `.claude-plugin/` declaring the Agent Plugins schema, or a `.claude-plugin/plugin.json` or `marketplace.json` | agent plugins |
 
 A Kubernetes manifest is a YAML file with `apiVersion` and `kind` at its top
 level; a helm chart is a `Chart.yaml`. **A compose file alone derives no
@@ -64,7 +66,10 @@ hook**: neither scanner of the infrastructure set reads one, and the
 infrastructure topic says which piece of its signal switches on which hooks.
 **A manifest that pins only a command-line tool derives no web set** — with no
 TypeScript or JavaScript under it there is nothing for the web hooks to read —
-though its lockfile is still one the repository tracks.
+though its lockfile is still one the repository tracks. **An action metadata
+file or a dependabot file alone derives no CI set**, and **each plugin
+manifest kind derives only its own check** — the agent-plugins topic says
+which.
 
 A signal the standard has no set for prescribes nothing: leave whatever the
 project runs on those files alone.

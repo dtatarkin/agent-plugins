@@ -262,6 +262,28 @@ change's commits.
 
 <!-- Written by the applier of task 1.1: the commands, both exit codes, and the first error line of the offline run. -->
 
+Measured 2026-11-12 with `check-jsonschema` **0.39.0**, the newest tag at least seven days old: its release and tag
+are dated 2026-10-26, 17 days before the run. The schema URL is the one all nine portable manifests declare.
+
+1. **Online:** exit **0**, output `ok -- validation done`.
+
+   ```text
+   uvx --from check-jsonschema==0.39.0 check-jsonschema \
+     --schemafile https://agent-plugins.org/schemas/1.0.0/plugin.schema.json plugins/*/plugin.json
+   ```
+
+2. **Offline**, right after the online run filled the cache: exit **1**.
+
+   ```text
+   unshare -rn uvx --offline --from check-jsonschema==0.39.0 check-jsonschema \
+     --schemafile https://agent-plugins.org/schemas/1.0.0/plugin.schema.json plugins/*/plugin.json
+   ```
+
+   First error line: `Error: Unexpected Error building schema validator`, raised as `FailedDownloadError` from a
+   name-resolution failure on the schema host.
+
+The expected result holds: the cached schema does not validate offline, so the hook runs in the manual stage (D1).
+
 ## Assumptions
 
 - **A1.** The change `rules-authoring-plugin` has landed `plugins/plugin-rules/` with a root `plugin.json` declaring
@@ -280,3 +302,10 @@ change's commits.
 - **A4.** The current portable manifests validate against the schema. Task 1.1's online run confirms it; a failure
   there is fixed in the manifest within that task.
 - **A5.** No artifact or commit message names the private source repository or the plugins that stay there.
+- **A6.** Written by the applier of section 1. The new topics' `paths:` use the block-list form every other topic
+  uses, not the inline `["…"]` form tasks 1.2 and 1.3 quote: the two are the same YAML, and the frontmatter tests read
+  the block form.
+- **A7.** Written by the applier of section 1. The link checker's repository carries four tag families: `lychee-v*`
+  releases, `lychee-lib-v*` library tags, bare `v*` tags from before the split, and a moving `nightly` pre-release.
+  The version procedure's command is left unchanged; `versions.md` asks that the chosen pin be checked by name as well
+  as by date. Task 2.3 pins by hand to a `lychee-v*` tag if the updater lands elsewhere.

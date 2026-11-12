@@ -38,6 +38,11 @@ prefer the real release on its own on any given day — keep the flag regardless
 because that is a property of the tool's sort, not a promise from the
 repository.
 
+The link checker's repository tags its releases **`lychee-v<version>`**,
+beside tags for its library crate, bare `v` tags from before that naming, and a
+moving `nightly` pre-release. **Its pin is a `lychee-v*` tag**: check that the
+updater landed on one, by name as well as by date.
+
 **`pre-commit autoupdate` is not this procedure.** It knows no cooldown, so it
 takes today's release; and it prefers the moving tag, so it moves a good pin
 backwards onto it. Use it only as a fallback when the updater is unavailable,

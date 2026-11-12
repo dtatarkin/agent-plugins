@@ -24,6 +24,8 @@ others apply.
 | Terraform, Ansible, Dockerfiles, compose or Kubernetes manifests | `references/infra.md` |
 | A web package with a package manager's lockfile | `references/web.md` |
 | A dbt project | `references/data.md` |
+| GitHub Actions workflows | `references/ci.md` |
+| Agent plugin manifests — portable or Claude | `references/agent-plugins.md` |
 
 If a change spans several topics, read each relevant file. Do not guess at the
 rules — read the file.
