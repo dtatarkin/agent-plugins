@@ -261,3 +261,17 @@ outside this repository changes.
   `.pre-commit-config.yaml`. A spelling allowlisted in section 1 is in `_typos.toml`.
 - **A8:** Of the checker tests, only `tests/lintlint/test_citations.py` and `tests/justlint/test_citations.py` read
   files under `plugins/`. Checked by reading every checker test for `plugins` and `skills/`.
+- **A9 (section 1 applier):** `justlint/entry.py` and `tests/justlint/test_entry.py` also opened their docstrings with
+  "the repo's other four scripts", the source repository's other console scripts. That is the same class of prose as
+  D6's dependency list, so it went too: both now say only that the entry is not a `typer` app. The comment above each
+  `THIRD_PARTY` tuple names no private context and stays as it was.
+- **A10 (section 1 applier):** `prek update` ran with `--repo` naming the three new repositories only, so the existing
+  pins did not move in this change. The new pins and their tag dates: `ruff-pre-commit` v0.17.3 (2026-10-27),
+  `uv-pre-commit` 0.13.7 (2026-11-03), `validate-pyproject` v0.27 (2026-10-22), all at least seven days old on
+  2026-11-12.
+- **A11 (section 1 applier):** `prek run typos --all-files` rewrote nothing in section 1, so `_typos.toml` gained only
+  `uv.lock`. No SHA allowlist was needed. `prek run --all-files` changed no file this section did not add, so there is
+  no `.git-blame-ignore-revs`.
+- **A12 (section 1 applier):** `pyproject.toml`'s `description` and the comments above the two console scripts are
+  written for this package. They restate the source's reasons (a plain function, so the hook path imports no `typer`)
+  without its list of other scripts and dependencies.

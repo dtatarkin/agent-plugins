@@ -1,0 +1,3 @@
+[doc("Show status of git submodules")]
+status *args="--recursive":
+    git submodule status {{ args }}

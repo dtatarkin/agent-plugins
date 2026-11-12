@@ -1,0 +1,6 @@
+[doc("Show the current branch")]
+branch:
+    git branch --show-current
+
+worktree-add *options:
+    git worktree add {{ options }}

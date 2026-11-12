@@ -1,0 +1,3 @@
+# a sub-repository recipe nobody may fix from the umbrella
+run *args:
+    uv run app {{ args }}

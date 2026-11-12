@@ -1,0 +1,17 @@
+[project]
+name = "app"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["ruff", "mypy", "ty>=0.0.1", "rust-just>=1.40"]
+
+[tool.uv]
+exclude-newer = "7 days"
+
+[tool.ruff.lint]
+extend-select = ["S"]
+ignore = ["S603", "S607"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S107"]

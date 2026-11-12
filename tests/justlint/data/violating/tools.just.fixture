@@ -1,0 +1,3 @@
+[doc("A module with neither `source_file` nor a `list` recipe")]
+build:
+    echo build

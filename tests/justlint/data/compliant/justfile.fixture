@@ -1,0 +1,28 @@
+mod tools 'tools.just'
+
+source_file := source_file()
+
+[default]
+[doc("List all available recipes")]
+list: (tools::list source_file)
+
+[doc("Forward the user's arguments")]
+[positional-arguments]
+forward *args:
+    uv run app "$@"
+
+[doc("Two commands, in one shell")]
+two-lines:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo one
+    echo two
+
+[private]
+_hidden:
+    echo hi
+
+[doc("Show what the submodules are doing")]
+[no-cd]
+submodule-status *args:
+    git submodule foreach --recursive "git status --short {{ args }}; echo"

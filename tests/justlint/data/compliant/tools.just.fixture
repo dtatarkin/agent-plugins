@@ -1,0 +1,10 @@
+source_file := source_file()
+
+[default]
+[doc("List all available recipes")]
+list justfile=source_file:
+    just --justfile {{ justfile }} --list
+
+[doc("Build the project")]
+build:
+    echo build

@@ -1,0 +1,37 @@
+mod just 'shared/just.just'
+mod git 'shared/git.just'
+mod git-submodule 'shared/git-submodule.just'
+mod pre-commit 'shared/pre-commit.just'
+
+mod app 'app/justfile'
+mod ops 'ops/justfile'
+
+import? '.just'
+
+source_file := source_file()
+
+[default]
+[doc("List all available recipes")]
+list: (just::list source_file)
+
+# Copy each template under templates/ into the sub-repository it names
+provision:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    find templates -name '*.md' | while read -r template; do
+        repo="${template#templates/}"
+        repo="${repo%.md}"
+        if [ ! -e "$repo/.git" ]; then
+            echo "skipped $repo (not initialized)"
+            continue
+        fi
+        cp "$template" "$repo/NOTES.md"
+        echo "provisioned $repo/NOTES.md"
+    done
+
+# Regenerate the docs/ copy (review the diff and commit it by hand)
+sync-docs:
+    uv run tools/sync_docs.py
+# Enter the project toolchain
+shell *args:
+    nix develop {{ justfile_directory() }} {{ args }}

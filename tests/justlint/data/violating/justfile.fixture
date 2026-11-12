@@ -1,0 +1,34 @@
+mod tools 'tools.just'
+
+# help in a bare comment instead of [doc]
+bare-help:
+    echo hi
+
+no-help-at-all:
+    echo hi
+
+[doc("Never listed, so the help is wasted")]
+_hidden:
+    echo hi
+
+_no_private_attribute:
+    echo hi
+
+[private]
+private-without-underscore:
+    echo hi
+
+[doc("Forward the user's arguments")]
+forward *args:
+    uv run app {{ args }}
+
+[doc("Two commands, linewise")]
+two-lines:
+    echo one
+    echo two
+
+[doc("A bash body that is not strict")]
+loose:
+    #!/usr/bin/env bash
+    echo one
+    echo two
