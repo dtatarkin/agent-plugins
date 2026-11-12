@@ -29,7 +29,10 @@ layout derives the same set. Whether a repository tracks a lockfile of its
 own SHALL be a signal as well: the hooks of a set that act on a lockfile —
 keeping it in step with the project file, auditing the set it resolves —
 SHALL apply only where the repository tracks one, and SHALL leave and return
-with it as any derived hook does.
+with it as any derived hook does. A GitHub Actions workflow SHALL derive the
+CI set, and an agent plugin manifest SHALL derive the agent-plugins set: a
+portable manifest declaring the Agent Plugins schema derives its schema check,
+and a Claude plugin or marketplace manifest derives the host's validator.
 
 #### Scenario: A Python repository is derived
 
@@ -101,6 +104,30 @@ with it as any derived hook does.
   of the pair reads a compose file, and a gate that reads nothing is not
   carried
 
+#### Scenario: A repository tracks a GitHub Actions workflow
+
+- **WHEN** an agent derives the checks for a repository tracking a YAML file
+  directly under `.github/workflows/`
+- **THEN** the derived set carries the CI set: the workflow linter, the
+  workflow security auditor and the workflow schema check
+- **AND** an action metadata file or a dependabot file alone derives none of
+  them
+
+#### Scenario: A repository tracks plugin manifests
+
+- **WHEN** an agent derives the checks for a repository tracking a portable
+  plugin manifest that declares the Agent Plugins schema, and a Claude plugin
+  manifest or marketplace manifest
+- **THEN** the derived set carries the schema check for the portable manifest
+  and the host's validator for the Claude manifests
+- **AND** a repository tracking only one kind derives only that kind's check
+
+#### Scenario: A plugin.json declares no Agent Plugins schema
+
+- **WHEN** a repository tracks a `plugin.json` that is not under
+  `.claude-plugin/` and does not declare the Agent Plugins schema
+- **THEN** no schema check is derived for it
+
 ### Requirement: One house tool per concern, with two deliberate pairs
 
 For each concern the standard covers it SHALL name exactly one tool, and it
@@ -109,7 +136,12 @@ second tool for a concern. Two concerns are deliberate pairs and SHALL be
 stated as such: Python type checking runs mypy and ty, both blocking, with
 mypy as the reference gate; infrastructure scanning runs checkov and trivy's
 configuration scan, and a finding both raise is suppressed in the tool that
-raised it, always with a reason.
+raised it, always with a reason. A set may cover several concerns, one tool
+each, and SHALL name them: the CI set is three concerns — workflow semantics,
+workflow security and workflow schema — and the agent-plugins set is two, one
+per manifest kind, the portable manifest's schema and the Claude manifests'
+host validation. Link resolution in markdown is a concern of the markup set,
+separate from markdown style.
 
 #### Scenario: The house tools are read
 
@@ -119,11 +151,16 @@ raised it, always with a reason.
   justfile formatter for justfiles, nixfmt for nix, ruff for Python linting
   and formatting with its security rules in place of bandit, the lockfile
   hook and the project-file validator for Python packaging, yamllint for
-  YAML, taplo for TOML, rumdl for markdown, shellcheck for shell, terraform's
+  YAML, taplo for TOML, rumdl for markdown, lychee offline for relative
+  links, shellcheck for shell, terraform's
   own formatter and validator with tflint for terraform, ansible-lint for
   ansible, hadolint for Dockerfiles, eslint and prettier with the project's
   type checker for web code, and sqlfluff with dbt's own parse and the
-  dbt-checkpoint hooks for dbt projects
+  dbt-checkpoint hooks for dbt projects, actionlint for workflow semantics,
+  zizmor offline for workflow security, check-github-workflows for the
+  workflow schema, check-jsonschema against the Agent Plugins schema for a
+  portable plugin manifest, and `claude plugin validate --strict` for a Claude
+  plugin or marketplace manifest
 
 #### Scenario: A retired tool is found in a configuration
 
@@ -144,6 +181,12 @@ raised it, always with a reason.
 - **WHEN** a configuration runs a hook for a concern the standard has no tool
   for, such as a project's own drift check
 - **THEN** the hook belongs to the project, and convergence leaves it as it is
+
+#### Scenario: A set covers several concerns
+
+- **WHEN** the CI set or the agent-plugins set is read
+- **THEN** each of its tools is named for its own concern, and no two of them
+  are a pair for one concern
 
 ### Requirement: Canonical configuration carries no version numbers
 

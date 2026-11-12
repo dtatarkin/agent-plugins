@@ -169,6 +169,25 @@ repository pinned by commit hash or on the moving major tag.
   checker's is the moving major tag
 - **THEN** the checker reports it
 
+#### Scenario: An offline check reaches the network
+
+- **WHEN** the link checker or the workflow security auditor runs without its
+  offline flag or without its no-progress flag
+- **THEN** the checker reports the hook, naming the flag
+
+#### Scenario: The host validator is lenient
+
+- **WHEN** the Claude manifest validator runs without `--strict`
+- **THEN** the checker reports the hook, naming the flag
+
+#### Scenario: The plugin schema check blocks
+
+- **WHEN** the schema check of the portable plugin manifest, fetching its
+  schema over the network, is not confined to the manual stage
+- **THEN** the checker reports it
+- **AND** it does not ask that check to run on every invocation, because the
+  check is handed the manifests it validates
+
 ### Requirement: The linter configuration files are checked
 
 Over each linter's own configuration file the checker SHALL report: a file
@@ -233,6 +252,13 @@ tokens and required flags, never the whole string.
 
 - **WHEN** a hook repository's tag is years behind upstream
 - **THEN** the checker reports nothing: the age check is the procedure's
+
+#### Scenario: A schema check of another schema
+
+- **WHEN** the configuration carries the schema checker's hook pointed at a
+  schema other than the Agent Plugins schema
+- **THEN** the checker reports nothing for it, and it does not stand in for
+  the house schema check
 
 ### Requirement: Each finding names its topic file
 
