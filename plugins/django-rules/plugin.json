@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "django-rules",
   "version": "0.1.0",
-  "description": "Rules and patterns for Django code — models, django-ninja APIs, and migrations. Loaded only when Django code is touched.",
+  "description": "Rules and patterns for Django code — models, django-ninja APIs, admin, settings, app layout and tests. Loaded only when Django code is touched.",
   "author": {
     "name": "Dmitry Tatarkin",
     "email": "tatarkin@gmail.com"

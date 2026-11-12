@@ -9,8 +9,10 @@ Antigravity CLI.
 - `logging-rules`: log call sites and centralized logging configuration.
 - `lint-rules`: the house lint standard, with hooks that check lint
   configuration as it is edited.
-- `clickhouse-rules`: reading deduplicated ClickHouse tables, and table design.
-- `django-rules`: Django models, django-ninja APIs, admin, settings and tests.
+- `clickhouse-rules`: reading deduplicated ClickHouse tables, table design, and
+  joins.
+- `django-rules`: Django models, django-ninja APIs, admin, settings, app layout
+  and tests.
 - `just-rules`: justfile conventions, with hooks that check justfiles as they
   are edited.
 - `metabase-rules`: Metabase queries, collections, and content kept as code.

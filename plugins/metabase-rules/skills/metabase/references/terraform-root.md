@@ -1,8 +1,8 @@
 # The Terraform root that holds Metabase content
 
-What is specific to a root declaring Metabase content with the community
-provider (`flovouin/metabase`) and its importer, `mbtf`. Layout, state and
-modules are the same as for any other root.
+What is specific to a root declaring Metabase content with the provider and
+importer that `content-as-code.md` names. Layout, state and modules are the
+same as for any other root.
 
 1. **The root lives in the project's own repository**, beside what it
    reports on, so that a change to the data and the change to the dashboards

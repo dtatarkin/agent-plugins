@@ -1,6 +1,6 @@
 {
   "name": "django-rules",
-  "description": "Rules and patterns for Django code — models, django-ninja APIs, and migrations. Loaded only when Django code is touched.",
+  "description": "Rules and patterns for Django code — models, django-ninja APIs, admin, settings, app layout and tests. Loaded only when Django code is touched.",
   "version": "0.1.0",
   "author": { "name": "Dmitry Tatarkin", "email": "tatarkin@gmail.com" },
   "keywords": ["django", "conventions", "rules", "patterns"]

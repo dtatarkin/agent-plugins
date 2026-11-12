@@ -1,6 +1,6 @@
 ---
 name: django
-description: Rules and patterns for writing Django code — models/fields/managers, django-ninja routers and schemas, and database migrations. Load this whenever creating or editing Django source.
+description: Rules and patterns for writing Django code — models/fields/managers, django-ninja routers and schemas, admin, settings, app layout, and Django-specific tests. Load this whenever creating or editing Django source.
 ---
 
 # Django rules
@@ -17,8 +17,16 @@ Read the topic that matches the work:
 | django-ninja routers, schemas, API endpoints | `references/ninja.md` |
 | `ModelAdmin`, admin registration, admin forms | `references/admin.md` |
 | Settings modules, `INSTALLED_APPS`, env config | `references/settings.md` |
-| App layout — `models/`/`admin/`/`tasks/`, signals, `types.py`/`consts.py` | `references/structure.md` |
+| App layout — `models/`/`admin/`/`tasks/`, signals, Celery tasks, app nesting | `references/structure.md` |
 | Tests (Django specifics) | `references/testing.md` |
+
+Some topics live in other domains, and this router points rather than repeats:
+
+| You are editing… | Read |
+|------------------|------|
+| Env-bound configuration read by settings | `python-rules:python` → `references/config.md` |
+| One class or function per file, per-package `types.py`/`consts.py` | `python-rules:python` → `references/file-organization.md` |
+| Tests in general — pytest style, layout, fixtures | `python-rules:python` → `references/testing.md` |
 
 If a change spans several topics, read each relevant file. Do not guess at the
 rules — read the file.

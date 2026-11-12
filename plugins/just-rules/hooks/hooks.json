@@ -14,8 +14,10 @@
         "hooks": [
           { "type": "command", "if": "Edit(**/justfile)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
           { "type": "command", "if": "Edit(**/*.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
           { "type": "command", "if": "Write(**/justfile)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
-          { "type": "command", "if": "Write(**/*.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] }
+          { "type": "command", "if": "Write(**/*.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] }
         ]
       }
     ],
@@ -25,8 +27,10 @@
         "hooks": [
           { "type": "command", "if": "Edit(**/justfile)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
           { "type": "command", "if": "Edit(**/*.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
+          { "type": "command", "if": "Edit(**/.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
           { "type": "command", "if": "Write(**/justfile)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
-          { "type": "command", "if": "Write(**/*.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] }
+          { "type": "command", "if": "Write(**/*.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] },
+          { "type": "command", "if": "Write(**/.just)", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/run-checker", "args": ["just-lint", "hook"] }
         ]
       }
     ],
