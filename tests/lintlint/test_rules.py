@@ -776,7 +776,7 @@ class TestHostedForm:
         assert pairs(findings) == {("checkov", "hook-form")}
         assert "https://github.com/bridgecrewio/checkov" in findings[0].detail
         assert "`rev:`" in findings[0].detail
-        assert "skills/lint/references/infra.md" in findings[0].detail
+        assert "skills/lint/references/scanning.md" in findings[0].detail
 
     def test_a_lockless_local_ansible_linter_owes_the_hosted_form(self, roles_tree: Path) -> None:
         _drop_hosted(roles_tree, "ansible/ansible-lint")
@@ -802,9 +802,10 @@ class TestHostedForm:
         add_local_hooks(tree, LOCAL_TRIVY)
         findings = audit(tree)
         assert pairs(findings) == {("ansible-lint", "hook-form"), ("checkov", "hook-form")}
+        topics = {"ansible-lint": "ansible", "checkov": "scanning"}
         for finding in findings:
             assert "`uv run`" in finding.detail
-            assert "skills/lint/references/infra.md" in finding.detail
+            assert f"skills/lint/references/{topics[finding.subject]}.md" in finding.detail
 
     @pytest.mark.parametrize("dependencies", ["[ansible-core]", "[]"])
     def test_a_hosted_ansible_linter_without_the_collections(
@@ -814,7 +815,7 @@ class TestHostedForm:
         findings = audit(roles_tree)
         assert pairs(findings) == {("ansible-lint", "hook-args")}
         assert "`ansible`" in findings[0].detail
-        assert findings[0].topic == "infra"
+        assert findings[0].topic == "ansible"
 
     def test_a_pinned_collections_dependency_will_do(self, roles_tree: Path) -> None:
         edit(roles_tree, "dependencies: [ansible]", "dependencies: ['ansible>=11']")

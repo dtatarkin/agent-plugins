@@ -77,13 +77,13 @@ HOUSE_HOOKS: tuple[HouseHook, ...] = (
     HouseHook("rumdl-check", "markup", Signal.MARKUP),
     HouseHook("lychee", "markup", Signal.MARKUP),
     HouseHook("shellcheck", "shell", Signal.SHELL),
-    HouseHook("terraform-fmt", "infra", Signal.TERRAFORM),
-    HouseHook("terraform-validate", "infra", Signal.TERRAFORM),
-    HouseHook("tflint", "infra", Signal.TERRAFORM),
-    HouseHook("ansible-lint", "infra", Signal.ANSIBLE),
-    HouseHook("hadolint", "infra", Signal.DOCKERFILE),
-    HouseHook("checkov", "infra", Signal.SCANNED),
-    HouseHook("trivy-config", "infra", Signal.SCANNED),
+    HouseHook("terraform-fmt", "terraform", Signal.TERRAFORM),
+    HouseHook("terraform-validate", "terraform", Signal.TERRAFORM),
+    HouseHook("tflint", "terraform", Signal.TERRAFORM),
+    HouseHook("ansible-lint", "ansible", Signal.ANSIBLE),
+    HouseHook("hadolint", "dockerfile", Signal.DOCKERFILE),
+    HouseHook("checkov", "scanning", Signal.SCANNED),
+    HouseHook("trivy-config", "scanning", Signal.SCANNED),
     HouseHook("eslint", "web", Signal.WEB),
     HouseHook("prettier", "web", Signal.WEB),
     HouseHook("typecheck", "web", Signal.WEB),
@@ -110,7 +110,7 @@ RETIRED_TOOLS: dict[str, Replacement] = {
 # Retired under one spelling only: the tool itself stays.
 RETIRED_IDS: dict[str, Replacement] = {
     "ruff": Replacement("ruff-check", "python"),
-    "hadolint-docker": Replacement("hadolint", "infra"),
+    "hadolint-docker": Replacement("hadolint", "dockerfile"),
 }
 
 # Retired as hook repositories, matched on the path of the URL.
@@ -135,7 +135,7 @@ HOOK_CANON: dict[str, Canon] = {
     "rumdl-check": Canon("markup", flags=("--fix",)),
     # Supplying `args:` replaces upstream's `--no-progress`, so both are canon.
     "lychee": Canon("markup", flags=("--offline", "--no-progress")),
-    "ansible-lint": Canon("infra", flags=("--offline",), whole_program=True, serial=True),
+    "ansible-lint": Canon("ansible", flags=("--offline",), whole_program=True, serial=True),
     "pip-audit": Canon(
         "python",
         flags=("--no-emit-workspace",),
@@ -146,12 +146,12 @@ HOOK_CANON: dict[str, Canon] = {
     "mypy": Canon("python", whole_program=True, filtered=True),
     "ty": Canon("python", whole_program=True, filtered=True),
     "typecheck": Canon("web", whole_program=True, filtered=True),
-    "terraform-fmt": Canon("infra", whole_program=True, filtered=True),
-    "terraform-validate": Canon("infra", whole_program=True, filtered=True),
-    "tflint": Canon("infra", whole_program=True, filtered=True),
-    "checkov": Canon("infra", whole_program=True, filtered=True),
+    "terraform-fmt": Canon("terraform", whole_program=True, filtered=True),
+    "terraform-validate": Canon("terraform", whole_program=True, filtered=True),
+    "tflint": Canon("terraform", whole_program=True, filtered=True),
+    "checkov": Canon("scanning", whole_program=True, filtered=True),
     "trivy-config": Canon(
-        "infra",
+        "scanning",
         flags=("--exit-code 1", "--severity HIGH,CRITICAL"),
         whole_program=True,
         filtered=True,
@@ -187,8 +187,8 @@ FORM_TOOLS: dict[str, FormTool] = {
     "format-justfile": FormTool("just", "baseline"),
     "mypy": FormTool("mypy", "python"),
     "ty": FormTool("ty", "python"),
-    "checkov": FormTool("checkov", "infra"),
-    "ansible-lint": FormTool("ansible-lint", "infra"),
+    "checkov": FormTool("checkov", "scanning"),
+    "ansible-lint": FormTool("ansible-lint", "ansible"),
     "sqlfluff-fix": FormTool("sqlfluff", "data"),
     "dbt-parse": FormTool("dbt", "data"),
 }
@@ -200,8 +200,8 @@ FORM_TOOLS: dict[str, FormTool] = {
 # tools that meet it are listed. A hook hosted from any other repository, such
 # as a mirror, gets no form verdict.
 HOSTED_FORM_TOOLS: dict[str, HostedTool] = {
-    "ansible-lint": HostedTool("ansible/ansible-lint", "infra"),
-    "checkov": HostedTool("bridgecrewio/checkov", "infra"),
+    "ansible-lint": HostedTool("ansible/ansible-lint", "ansible"),
+    "checkov": HostedTool("bridgecrewio/checkov", "scanning"),
 }
 HOSTED_URL_TEMPLATE = "https://github.com/{repository}"
 

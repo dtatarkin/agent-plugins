@@ -54,7 +54,10 @@ Derive the set from the tree. Never copy another repository's configuration.
 | `pyproject.toml`, or any `*.py` | Python |
 | any YAML, TOML or markdown file | markup |
 | any `*.sh`, or a file carrying a shell shebang | shell |
-| any `*.tf`, Ansible content (an `ansible/` directory, a collection manifest, or a role's tasks under `roles/`), a `Dockerfile`, a helm chart, or Kubernetes manifests | infrastructure |
+| any `*.tf` | Terraform, and scanning |
+| Ansible content (an `ansible/` directory, a collection manifest, or a role's tasks under `roles/`) | Ansible, and scanning |
+| a `Dockerfile` | Dockerfiles |
+| a helm chart, or Kubernetes manifests | scanning |
 | `package.json` beside a package manager's lockfile, with a TypeScript or JavaScript file under it that the configuration's top-level exclusion leaves to the hooks | web |
 | a dbt project file | data |
 | a YAML file directly under `.github/workflows/` | CI |
@@ -62,8 +65,7 @@ Derive the set from the tree. Never copy another repository's configuration.
 
 A Kubernetes manifest is a YAML file with `apiVersion` and `kind` at its top
 level; a helm chart is a `Chart.yaml`. **A compose file alone derives no
-hook**: neither scanner of the infrastructure set reads one, and the
-infrastructure topic says which piece of its signal switches on which hooks.
+hook**: neither scanner of the scanning pair reads one.
 **A manifest that pins only a command-line tool derives no web set** — with no
 TypeScript or JavaScript under it there is nothing for the web hooks to read —
 though its lockfile is still one the repository tracks. **An action metadata
