@@ -6,6 +6,7 @@ from pathlib import PurePosixPath
 
 from agent_plugins.lintlint.types import (
     Canon,
+    FormTool,
     HostedTool,
     HouseHook,
     Replacement,
@@ -182,14 +183,14 @@ TYPOS_DEFAULT_FLAGS = ("--write-changes", "--force-exclude")
 
 # Local hooks the lockfile signal decides the form of: id, the tool they run,
 # and the topic giving both forms.
-FORM_TOOLS: dict[str, tuple[str, str]] = {
-    "format-justfile": ("just", "baseline"),
-    "mypy": ("mypy", "python"),
-    "ty": ("ty", "python"),
-    "checkov": ("checkov", "infra"),
-    "ansible-lint": ("ansible-lint", "infra"),
-    "sqlfluff-fix": ("sqlfluff", "data"),
-    "dbt-parse": ("dbt", "data"),
+FORM_TOOLS: dict[str, FormTool] = {
+    "format-justfile": FormTool("just", "baseline"),
+    "mypy": FormTool("mypy", "python"),
+    "ty": FormTool("ty", "python"),
+    "checkov": FormTool("checkov", "infra"),
+    "ansible-lint": FormTool("ansible-lint", "infra"),
+    "sqlfluff-fix": FormTool("sqlfluff", "data"),
+    "dbt-parse": FormTool("dbt", "data"),
 }
 
 # Form tools a repository that tracks no lockfile hosts rather than calls by
@@ -230,12 +231,21 @@ TYPOS_MOVING_TAG = "v1"
 # Hook repositories with no pin to compare.
 PINLESS_REPOS = frozenset({"local", "meta"})
 
+COMMIT_HASH = re.compile(r"[0-9a-f]{7,40}")
+DISTRIBUTION_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+# Where a tool's name counts as the command: not inside a path, a flag or a
+# longer name. The body of a `bash -c` loop is searched the same way.
+WORD_START = r"(?<![\w/.=-])"
+WORD_END = r"(?![\w.-])"
+
 # The linter files, each under every name its tool reads; the first is the name
 # a finding asks for.
 YAMLLINT_FILES = (".yamllint.yaml", ".yamllint", ".yamllint.yml")
 RUMDL_FILE = ".rumdl.toml"
 TYPOS_FILES = ("_typos.toml", ".typos.toml")
 SHELLCHECK_FILE = ".shellcheckrc"
+SHELLCHECK_DISABLE = re.compile(r"^\s*disable\s*=", re.MULTILINE)
 RUFF_FILES = (".ruff.toml", "ruff.toml")
 PROJECT_FILE = "pyproject.toml"
 
@@ -265,6 +275,8 @@ RUMDL_VALUES: dict[str, object] = {
     "MD041.enabled": False,
 }
 
+RUFF_SECTIONS = ("select", "extend-select")
+RUFF_IGNORE_SECTIONS = ("ignore", "extend-ignore")
 RUFF_SECURITY_RULES = "S"
 RUFF_ALL_RULES = "ALL"
 RUFF_IGNORES = frozenset({"S603", "S607"})
@@ -294,6 +306,11 @@ MARKUP_SUFFIXES = frozenset({".yaml", ".yml", ".toml", ".md"})
 YAML_SUFFIXES = frozenset({".yaml", ".yml"})
 SHELL_SUFFIX = ".sh"
 SHELL_INTERPRETERS = ("sh", "bash", "dash", "ksh")
+SHEBANG = re.compile(
+    rb"^#!\s*(?:/usr/bin/env\s+(?:-S\s+)?)?(?:/\S*/)?(?:"
+    + "|".join(SHELL_INTERPRETERS).encode()
+    + rb")(?:\s|$)"
+)
 TERRAFORM_SUFFIX = ".tf"
 ANSIBLE_DIR = "ansible"
 ANSIBLE_MANIFEST = "galaxy.yml"
@@ -303,6 +320,7 @@ DOCKERFILE_NAME = "Dockerfile"
 DOCKERFILE_SUFFIX = ".dockerfile"
 HELM_MANIFEST = "Chart.yaml"
 MANIFEST_READ_LIMIT = 256 * 1024
+MANIFEST_KEYS = (re.compile(rb"^apiVersion:", re.M), re.compile(rb"^kind:", re.M))
 WEB_MANIFEST = "package.json"
 # The types the web set's linter and type check read; a manifest derives the
 # set only with one of them under its directory.
@@ -357,6 +375,20 @@ GOVERNED_GLOBS: tuple[str, ...] = (
     ".sqlfluffignore",
 )
 
+# What a file-level finding is named by when it has no subject.
+FILE_SUBJECT = "<file>"
+
+# How the hook's two reports lead, and what it says once when it cannot check.
+POST_LEAD = "fix them now, before moving on"
+STOP_LEAD = "still open; fix them before finishing"
+NO_GIT_NOTICE = "lint-lint: `git` is not on PATH, so lint checks are off in this session."
+
+# Marker names. The `git` notice is stated once per context; the Stop gate is
+# keyed on the prompt, never on `stop_hook_active` — that flag is also true
+# after another hook's block, which would skip this gate silently.
+NO_GIT_MARKER = "no-git"
+BLOCKED_MARKER = "blocked-{prompt}"
+
 # `additionalContext` reaches the model inline up to 10,000 characters per
 # hook; above it the harness hands over a preview the model need not open. A
 # report that would exceed it is truncated with a count of the rest, so a large
@@ -369,6 +401,13 @@ INLINE_LIMIT = 10_000
 STATE_ENV = "CLAUDE_PLUGIN_DATA"
 STATE_DIR_NAME = "lint"
 STATE_FALLBACK = ".cache/lint-lint"
+
+# Prefix of the bookkeeping files, which are not baselines: markers and guards.
+MARKER_PREFIX = "_"
+
+# How much of a path's digest names its state file. Enough to separate the
+# files of one context; the full path is stored inside the file.
+DIGEST_LENGTH = 16
 
 # State untouched for this long is pruned. Nothing is pruned at SessionEnd:
 # desktop sessions are resumed after it, and a baseline dropped there would

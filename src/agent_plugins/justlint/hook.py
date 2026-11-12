@@ -22,22 +22,19 @@ import sys
 from pathlib import Path
 
 from agent_plugins.justlint.checker import file_findings, keys_of
-from agent_plugins.justlint.consts import INLINE_LIMIT
+from agent_plugins.justlint.consts import (
+    BLOCKED_MARKER,
+    INLINE_LIMIT,
+    NO_JUST_MARKER,
+    NO_JUST_NOTICE,
+    POST_LEAD,
+    STOP_LEAD,
+)
 from agent_plugins.justlint.errors import JustMissing
 from agent_plugins.justlint.report import render_context
 from agent_plugins.justlint.resolve import is_checked_file
 from agent_plugins.justlint.state import LintState, prune, state_root
 from agent_plugins.justlint.types import Finding, FindingKey, JsonObject
-
-POST_LEAD = "fix them now, before moving on"
-STOP_LEAD = "still open; fix them before finishing"
-NO_JUST_NOTICE = "just-lint: `just` is not on PATH, so justfile checks are off in this session."
-
-# Marker names. The `just` notice is stated once per context; the Stop gate is
-# keyed on the prompt, never on `stop_hook_active` — that flag is also true
-# after another hook's block, which would skip this gate silently.
-NO_JUST_MARKER = "no-just"
-BLOCKED_MARKER = "blocked-{prompt}"
 
 
 def run_hook() -> int:

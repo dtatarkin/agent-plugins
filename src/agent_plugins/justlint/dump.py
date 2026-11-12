@@ -39,7 +39,7 @@ def dump_entrypoint(justfile: Path) -> JsonObject:
             text=True,
             check=False,
         )
-    except FileNotFoundError as exc:  # `just` itself is not installed
+    except FileNotFoundError as exc:
         raise JustMissing("`just` is not on PATH") from exc
     if completed.returncode != 0:
         raise JustParseFailed(_diagnostic(completed.stderr))

@@ -21,7 +21,7 @@ from agent_plugins.justlint.resolve import (
     repository_root,
 )
 from agent_plugins.justlint.rules import check_unit
-from agent_plugins.justlint.types import Finding, RuleId
+from agent_plugins.justlint.types import Finding, FindingKey, RuleId
 
 
 def audit(paths: Sequence[Path]) -> list[Finding]:
@@ -65,7 +65,7 @@ def file_findings(path: Path) -> list[Finding]:
     return check_unit(root, is_entrypoint=True)
 
 
-def keys_of(findings: Iterable[Finding]) -> set[tuple[str, str]]:
+def keys_of(findings: Iterable[Finding]) -> set[FindingKey]:
     """The ratchet keys of `findings` — what a baseline stores."""
     return {finding.key for finding in findings}
 

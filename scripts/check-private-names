@@ -56,8 +56,8 @@ class Hit(NamedTuple):
 
 
 class Scan(NamedTuple):
-    # An empty match counts towards `matched`, as it did for grep's exit
-    # status; only the non-empty matches are shown.
+    # An empty match counts towards `matched`, so a pattern that matches the
+    # empty string fails the check; only the non-empty matches are shown.
     matched: bool
     hits: list[Hit]
 
@@ -191,7 +191,7 @@ class Report:
         self.out: IO[bytes] = sys.stdout.buffer
 
     def scan(self, text: str) -> Scan:
-        """Match every line of TEXT, as grep -a -o -n did."""
+        """Every match on each line of TEXT, numbered from 1; a trailing newline opens no line."""
         lines = text.split("\n")
         if lines and lines[-1] == "":
             lines.pop()
@@ -246,7 +246,8 @@ class Objects:
             )
         except OSError:
             die("git cat-file failed (git cannot be run)")
-        assert self.proc.stdin is not None and self.proc.stdout is not None  # noqa: S101
+        if self.proc.stdin is None or self.proc.stdout is None:
+            die("git cat-file failed (no pipes)")
         self.stdin = self.proc.stdin
         self.stdout = self.proc.stdout
         self.blobs: dict[str, str] = {}

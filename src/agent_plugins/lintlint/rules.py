@@ -15,9 +15,6 @@ from pathlib import Path
 from typing import Any
 
 from agent_plugins.lintlint.config import (
-    HookConfig,
-    HookEntry,
-    RuffSettings,
     first_existing,
     load_hook_config,
     load_project,
@@ -30,9 +27,11 @@ from agent_plugins.lintlint.consts import (
     AGENT_PLUGINS_SCHEMA,
     ANSIBLE_COLLECTIONS_DEPENDENCY,
     ANSIBLE_LINT_ID,
+    COMMIT_HASH,
     DBT_CHECKPOINT_REPO,
     DBT_PARSE_ID,
     DEV_DEPENDENCIES,
+    DISTRIBUTION_NAME,
     FORM_TOOLS,
     GOVERNED_GLOBS,
     HOOK_CANON,
@@ -51,8 +50,10 @@ from agent_plugins.lintlint.consts import (
     RUFF_ALL_RULES,
     RUFF_FILES,
     RUFF_FORMAT_TYPES,
+    RUFF_IGNORE_SECTIONS,
     RUFF_IGNORES,
     RUFF_PER_FILE_SECTIONS,
+    RUFF_SECTIONS,
     RUFF_SECURITY_RULES,
     RUFF_TEST_GLOB,
     RUFF_TEST_GLOBS,
@@ -61,6 +62,7 @@ from agent_plugins.lintlint.consts import (
     RUMDL_VALUES,
     SCHEMA_CHECK_ID,
     SCHEMA_FILE_FLAG,
+    SHELLCHECK_DISABLE,
     SHELLCHECK_FILE,
     TOPIC_TEMPLATE,
     TYPOS_DEFAULT_FLAGS,
@@ -71,33 +73,28 @@ from agent_plugins.lintlint.consts import (
     UV_COOLDOWN_KEY,
     WEB_EXECUTORS,
     WEB_HOOKS,
+    WORD_END,
+    WORD_START,
     YAMLLINT_ANSIBLE_VALUES,
     YAMLLINT_DISABLED,
     YAMLLINT_FILES,
     YAMLLINT_VALUES,
 )
 from agent_plugins.lintlint.errors import ConfigParseFailed, NotARepository
-from agent_plugins.lintlint.signals import Repository, derive, find_repository
+from agent_plugins.lintlint.signals import derive, find_repository
 from agent_plugins.lintlint.types import (
     Finding,
     FindingKey,
+    HookConfig,
+    HookEntry,
     JsonObject,
     Replacement,
+    Repository,
+    RuffSettings,
     RuleId,
     Signal,
     Signals,
 )
-
-COMMIT_HASH = re.compile(r"[0-9a-f]{7,40}")
-SHELLCHECK_DISABLE = re.compile(r"^\s*disable\s*=", re.MULTILINE)
-DISTRIBUTION_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
-RUFF_SECTIONS = ("select", "extend-select")
-RUFF_IGNORE_SECTIONS = ("ignore", "extend-ignore")
-
-# Where a tool's name counts as the command: not inside a path, a flag or a
-# longer name. The body of a `bash -c` loop is searched the same way.
-WORD_START = r"(?<![\w/.=-])"
-WORD_END = r"(?![\w.-])"
 
 
 def audit(directory: Path) -> list[Finding]:
@@ -329,7 +326,7 @@ def _check_hosted_form(path: Path, hook: HookEntry, locked: bool) -> Iterator[Fi
     runner/by-name verdict.
     """
     repository, topic = HOSTED_FORM_TOOLS[hook.id]
-    tool, _ = FORM_TOOLS[hook.id]
+    tool = FORM_TOOLS[hook.id].tool
     if hook.repo == "local":
         visible = _runs_through_uv(hook.entry, tool) or _names(hook.entry, tool)
         if not locked and visible:

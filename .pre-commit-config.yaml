@@ -178,13 +178,15 @@ repos:
         args: [--fix]
         exclude: ^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)
 
-  # Markup: links.
+  # Markup: links. A dead link in the closed-change archive is history, so the
+  # archive is excluded here too, by the rewriting hooks' pattern.
   - repo: https://github.com/lycheeverse/lychee
     rev: lychee-v0.24.2
     hooks:
       - id: lychee
         args: [--offline, --no-progress]
         types: [markdown]
+        exclude: ^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)
 
   # Agent plugins. The portable manifests' schema runs on demand, because the
   # schema is fetched over the network:

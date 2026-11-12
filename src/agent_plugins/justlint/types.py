@@ -16,9 +16,6 @@ from typing import Any, NamedTuple
 # structurally rather than modelling every key `just` may add.
 JsonObject = dict[str, Any]
 
-# A baseline key: the recipe name (empty for a file-level rule) and the rule id.
-FindingKey = tuple[str, str]
-
 
 class RuleId(StrEnum):
     """The mechanically checkable rules. Judgment rules have no id here: they
@@ -33,6 +30,27 @@ class RuleId(StrEnum):
     SPLAT = "splat"
     MODULE_PREAMBLE = "module-preamble"
     PARSE = "parse"
+
+
+class FindingKey(NamedTuple):
+    """A baseline key: the recipe name (empty for a file-level rule) and the rule id."""
+
+    subject: str
+    rule: str
+
+
+class Unit(NamedTuple):
+    """One parsed unit of an entrypoint's dump, and whether it is the entrypoint."""
+
+    node: JsonObject
+    is_entrypoint: bool
+
+
+class TrackedBaseline(NamedTuple):
+    """A file this context has a baseline for, and that baseline."""
+
+    path: Path
+    keys: set[FindingKey]
 
 
 class Rule(NamedTuple):
@@ -56,4 +74,4 @@ class Finding(NamedTuple):
 
     @property
     def key(self) -> FindingKey:
-        return (self.subject, self.rule.value)
+        return FindingKey(self.subject, self.rule.value)

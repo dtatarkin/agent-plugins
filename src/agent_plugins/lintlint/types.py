@@ -10,15 +10,26 @@ argument to another does not read as a new violation.
 
 from dataclasses import dataclass
 from enum import StrEnum
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, NamedTuple
 
 # The parsed YAML and TOML the checker reads structurally rather than modelling
 # every key a tool may add.
 JsonObject = dict[str, Any]
 
-# A baseline key: the subject (empty for a file-level rule) and the rule id.
-FindingKey = tuple[str, str]
+
+class FindingKey(NamedTuple):
+    """A baseline key: the subject (empty for a file-level rule) and the rule id."""
+
+    subject: str
+    rule: str
+
+
+class TrackedBaseline(NamedTuple):
+    """A file this context has a baseline for, and that baseline."""
+
+    path: Path
+    keys: set[FindingKey]
 
 
 class RuleId(StrEnum):
@@ -107,6 +118,15 @@ class HostedTool(NamedTuple):
     topic: str
 
 
+class FormTool(NamedTuple):
+    """A local hook the lockfile signal decides the form of: the tool it runs
+    and the topic giving both forms.
+    """
+
+    tool: str
+    topic: str
+
+
 class Canon(NamedTuple):
     """The canonical arguments, filters and stages of one house hook.
 
@@ -139,4 +159,77 @@ class Finding(NamedTuple):
 
     @property
     def key(self) -> FindingKey:
-        return (self.subject, self.rule.value)
+        return FindingKey(self.subject, self.rule.value)
+
+
+@dataclass(frozen=True)
+class HookEntry:
+    """One hook of the configuration, with the repository that holds it.
+
+    `None` where the configuration says nothing: the hook then takes its
+    manifest's default, which is not the same thing as a stated value.
+    """
+
+    id: str
+    repo: str
+    entry: str = ""
+    args: tuple[str, ...] = ()
+    types: tuple[str, ...] = ()
+    types_or: tuple[str, ...] = ()
+    files: str | None = None
+    exclude: str | None = None
+    stages: tuple[str, ...] = ()
+    pass_filenames: bool | None = None
+    require_serial: bool | None = None
+    always_run: bool | None = None
+    additional_dependencies: tuple[str, ...] = ()
+
+    @property
+    def command(self) -> str:
+        """The entry and its arguments as one line of text."""
+        return " ".join((self.entry, *self.args)).strip()
+
+
+class RepoPin(NamedTuple):
+    """A hook repository and its `rev:`."""
+
+    repo: str
+    rev: str
+
+
+@dataclass(frozen=True)
+class HookConfig:
+    """The hook configuration: hooks in the order the runner runs them."""
+
+    hooks: tuple[HookEntry, ...]
+    pins: tuple[RepoPin, ...]
+    exclude: str | None = None
+
+
+class RuffSettings(NamedTuple):
+    """The ruff lint table, the file holding it, and that file's key prefix."""
+
+    source: Path
+    lint: JsonObject
+    prefix: str
+
+
+class TrackedFile(NamedTuple):
+    """One entry of the listing, as a path relative to the repository's root."""
+
+    path: PurePosixPath
+    executable: bool
+
+
+class Repository(NamedTuple):
+    """A repository's root and what it tracks there. Gitlinks are left out."""
+
+    root: Path
+    files: tuple[TrackedFile, ...]
+
+
+class NodeLockfile(NamedTuple):
+    """A package manifest with a lockfile beside it, and that lockfile's executor."""
+
+    manifest: PurePosixPath
+    executor: str

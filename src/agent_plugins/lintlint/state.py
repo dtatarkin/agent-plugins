@@ -19,19 +19,14 @@ from pathlib import Path
 from typing import Self
 
 from agent_plugins.lintlint.consts import (
+    DIGEST_LENGTH,
+    MARKER_PREFIX,
     PRUNE_AFTER,
     STATE_DIR_NAME,
     STATE_ENV,
     STATE_FALLBACK,
 )
-from agent_plugins.lintlint.types import FindingKey
-
-# Prefix of the bookkeeping files, which are not baselines: markers and guards.
-MARKER_PREFIX = "_"
-
-# How much of a path's digest names its state file. Enough to separate the
-# files of one context; the full path is stored inside the file.
-DIGEST_LENGTH = 16
+from agent_plugins.lintlint.types import FindingKey, TrackedBaseline
 
 
 def state_root() -> Path:
@@ -74,7 +69,7 @@ class LintState:
         if not file.is_file():
             return None
         record = json.loads(file.read_text())
-        return {(subject, rule) for subject, rule in record["baseline"]}
+        return {FindingKey(subject, rule) for subject, rule in record["baseline"]}
 
     def record_baseline(self, path: Path, keys: set[FindingKey]) -> None:
         """Record `keys` as the baseline of `path`, replacing any earlier one."""
@@ -82,11 +77,12 @@ class LintState:
         record = {"path": str(path), "baseline": sorted(keys)}
         self._baseline_file(path).write_text(json.dumps(record))
 
-    def tracked(self) -> Iterator[tuple[Path, set[FindingKey]]]:
+    def tracked(self) -> Iterator[TrackedBaseline]:
         """Every file this context has a baseline for, with that baseline."""
         for file in sorted(self._baselines()):
             record = json.loads(file.read_text())
-            yield Path(record["path"]), {(subject, rule) for subject, rule in record["baseline"]}
+            keys = {FindingKey(subject, rule) for subject, rule in record["baseline"]}
+            yield TrackedBaseline(Path(record["path"]), keys)
 
     def claim(self, marker: str) -> bool:
         """Claim a once-per-context marker, `True` the first time only."""

@@ -22,22 +22,19 @@ import json
 import sys
 from pathlib import Path
 
-from agent_plugins.lintlint.consts import INLINE_LIMIT
+from agent_plugins.lintlint.consts import (
+    BLOCKED_MARKER,
+    INLINE_LIMIT,
+    NO_GIT_MARKER,
+    NO_GIT_NOTICE,
+    POST_LEAD,
+    STOP_LEAD,
+)
 from agent_plugins.lintlint.errors import GitMissing
 from agent_plugins.lintlint.report import render_context
 from agent_plugins.lintlint.rules import file_findings, is_governed, keys_of
 from agent_plugins.lintlint.state import LintState, prune, state_root
 from agent_plugins.lintlint.types import Finding, FindingKey, JsonObject
-
-POST_LEAD = "fix them now, before moving on"
-STOP_LEAD = "still open; fix them before finishing"
-NO_GIT_NOTICE = "lint-lint: `git` is not on PATH, so lint checks are off in this session."
-
-# Marker names. The `git` notice is stated once per context; the Stop gate is
-# keyed on the prompt, never on `stop_hook_active` — that flag is also true
-# after another hook's block, which would skip this gate silently.
-NO_GIT_MARKER = "no-git"
-BLOCKED_MARKER = "blocked-{prompt}"
 
 
 def run_hook() -> int:

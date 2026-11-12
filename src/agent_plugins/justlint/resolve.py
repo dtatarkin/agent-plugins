@@ -11,7 +11,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from agent_plugins.justlint.consts import ENTRYPOINT_NAME, LOCAL_NAME, MODULE_SUFFIX, PRUNED_DIRS
-from agent_plugins.justlint.types import JsonObject
+from agent_plugins.justlint.types import JsonObject, Unit
 
 
 def is_checked_file(path: Path) -> bool:
@@ -50,7 +50,7 @@ def entrypoint_for(path: Path) -> Path | None:
     return None
 
 
-def iter_units(root: JsonObject, boundary: Path | None) -> Iterator[tuple[JsonObject, bool]]:
+def iter_units(root: JsonObject, boundary: Path | None) -> Iterator[Unit]:
     """The entrypoint and each module of it inside `boundary`'s repository,
     paired with whether it is the entrypoint.
 
@@ -61,12 +61,12 @@ def iter_units(root: JsonObject, boundary: Path | None) -> Iterator[tuple[JsonOb
     """
     seen: set[str] = set()
 
-    def walk(unit: JsonObject, is_entrypoint: bool) -> Iterator[tuple[JsonObject, bool]]:
+    def walk(unit: JsonObject, is_entrypoint: bool) -> Iterator[Unit]:
         source = unit["source"]
         if source in seen:
             return
         seen.add(source)
-        yield unit, is_entrypoint
+        yield Unit(unit, is_entrypoint)
         for module in unit["modules"].values():
             if repository_root(Path(module["source"])) == boundary:
                 yield from walk(module, False)

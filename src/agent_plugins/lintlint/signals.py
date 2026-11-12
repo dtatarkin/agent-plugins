@@ -11,7 +11,6 @@ import re
 import subprocess
 from collections.abc import Iterable, Iterator
 from pathlib import Path, PurePosixPath
-from typing import NamedTuple
 
 from agent_plugins.lintlint.consts import (
     AGENT_PLUGINS_SCHEMA,
@@ -26,6 +25,7 @@ from agent_plugins.lintlint.consts import (
     GITLINK_MODE,
     HELM_MANIFEST,
     LOCKFILE_NAME,
+    MANIFEST_KEYS,
     MANIFEST_READ_LIMIT,
     MARKUP_SUFFIXES,
     NODE_LOCKFILES,
@@ -35,7 +35,7 @@ from agent_plugins.lintlint.consts import (
     ROLE_TASKS_DIR,
     ROLES_DIR,
     SCHEMA_KEY,
-    SHELL_INTERPRETERS,
+    SHEBANG,
     SHELL_SUFFIX,
     SUBMODULES_FILE,
     TERRAFORM_SUFFIX,
@@ -46,28 +46,7 @@ from agent_plugins.lintlint.consts import (
     YAML_SUFFIXES,
 )
 from agent_plugins.lintlint.errors import GitMissing, NotARepository
-from agent_plugins.lintlint.types import Signal, Signals
-
-SHEBANG = re.compile(
-    rb"^#!\s*(?:/usr/bin/env\s+(?:-S\s+)?)?(?:/\S*/)?(?:"
-    + "|".join(SHELL_INTERPRETERS).encode()
-    + rb")(?:\s|$)"
-)
-MANIFEST_KEYS = (re.compile(rb"^apiVersion:", re.M), re.compile(rb"^kind:", re.M))
-
-
-class TrackedFile(NamedTuple):
-    """One entry of the listing, as a path relative to the repository's root."""
-
-    path: PurePosixPath
-    executable: bool
-
-
-class Repository(NamedTuple):
-    """A repository's root and what it tracks there. Gitlinks are left out."""
-
-    root: Path
-    files: tuple[TrackedFile, ...]
+from agent_plugins.lintlint.types import NodeLockfile, Repository, Signal, Signals, TrackedFile
 
 
 def find_repository(directory: Path) -> Repository:
@@ -259,7 +238,7 @@ def _is_kubernetes_manifest(path: Path) -> bool:
     return all(key.search(head) for key in MANIFEST_KEYS)
 
 
-def _node_lockfile_pairs(paths: Iterable[PurePosixPath]) -> Iterator[tuple[PurePosixPath, str]]:
+def _node_lockfile_pairs(paths: Iterable[PurePosixPath]) -> Iterator[NodeLockfile]:
     """Each package manifest with a lockfile beside it, and that lockfile's
     executor. Every pair is a tracked lockfile; only one with web source under
     it owes the web set.
@@ -269,7 +248,7 @@ def _node_lockfile_pairs(paths: Iterable[PurePosixPath]) -> Iterator[tuple[PureP
         executor = NODE_LOCKFILES.get(path.name)
         manifest = path.with_name(WEB_MANIFEST)
         if executor is not None and manifest in listed:
-            yield manifest, executor
+            yield NodeLockfile(manifest, executor)
 
 
 def _has_web_source(manifest: PurePosixPath, paths: Iterable[PurePosixPath]) -> bool:

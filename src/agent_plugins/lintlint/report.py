@@ -8,11 +8,8 @@ The rationale is never repeated — the cited topic is the one copy of it.
 from collections.abc import Sequence
 from pathlib import Path
 
-from agent_plugins.lintlint.consts import RULES, TOPIC_TEMPLATE
+from agent_plugins.lintlint.consts import FILE_SUBJECT, RULES, TOPIC_TEMPLATE
 from agent_plugins.lintlint.types import Finding
-
-# What a file-level finding is named by when it has no subject.
-FILE_SUBJECT = "<file>"
 
 
 def render_audit(findings: Sequence[Finding], base: Path | None = None) -> str:

@@ -7,68 +7,15 @@ here, so what the rules compare is what the runner would run.
 
 import tomllib
 from collections.abc import Sequence
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Any
 
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
 from agent_plugins.lintlint.consts import PROJECT_FILE, RUFF_FILES
 from agent_plugins.lintlint.errors import ConfigParseFailed
-from agent_plugins.lintlint.types import JsonObject
-
-
-@dataclass(frozen=True)
-class HookEntry:
-    """One hook of the configuration, with the repository that holds it.
-
-    `None` where the configuration says nothing: the hook then takes its
-    manifest's default, which is not the same thing as a stated value.
-    """
-
-    id: str
-    repo: str
-    entry: str = ""
-    args: tuple[str, ...] = ()
-    types: tuple[str, ...] = ()
-    types_or: tuple[str, ...] = ()
-    files: str | None = None
-    exclude: str | None = None
-    stages: tuple[str, ...] = ()
-    pass_filenames: bool | None = None
-    require_serial: bool | None = None
-    always_run: bool | None = None
-    additional_dependencies: tuple[str, ...] = ()
-
-    @property
-    def command(self) -> str:
-        """The entry and its arguments as one line of text."""
-        return " ".join((self.entry, *self.args)).strip()
-
-
-class RepoPin(NamedTuple):
-    """A hook repository and its `rev:`."""
-
-    repo: str
-    rev: str
-
-
-@dataclass(frozen=True)
-class HookConfig:
-    """The hook configuration: hooks in the order the runner runs them."""
-
-    hooks: tuple[HookEntry, ...]
-    pins: tuple[RepoPin, ...]
-    exclude: str | None = None
-
-
-class RuffSettings(NamedTuple):
-    """The ruff lint table, the file holding it, and that file's key prefix."""
-
-    source: Path
-    lint: JsonObject
-    prefix: str
+from agent_plugins.lintlint.types import HookConfig, HookEntry, JsonObject, RepoPin, RuffSettings
 
 
 def load_hook_config(path: Path) -> HookConfig | None:

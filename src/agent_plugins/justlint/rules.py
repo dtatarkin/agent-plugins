@@ -15,26 +15,13 @@ agent through the rule files.
 from collections.abc import Iterator
 from pathlib import Path
 
-from agent_plugins.justlint.consts import MODULE_SUFFIX
+from agent_plugins.justlint.consts import (
+    INTERPOLATION_PLACEHOLDER,
+    MODULE_SUFFIX,
+    NESTED_SHELL_COMMANDS,
+    STRICT_PREAMBLE_LINES,
+)
 from agent_plugins.justlint.types import Finding, JsonObject, RuleId
-
-# The nested-shell commands whose quoted argument a splat may sit in: each hands
-# that string to a fresh shell, which re-splits it, so a variadic inside one is
-# the plain-tokens-only form the conventions sanction rather than a splat into
-# this shell's text. An allowlist, not a general quote analysis.
-#
-# `sops exec-env` is the second family, and `sops-exec-env` catches a project
-# recipe of that name wrapping it (`just sops-exec-env <file> '<command>'`),
-# which is how the estate actually spells it.
-NESTED_SHELL_COMMANDS = ("git submodule foreach", "sops exec-env", "sops-exec-env")
-
-# What an interpolation contributes when the literal text around it is read.
-# Anything without a quote of its own would do.
-INTERPOLATION_PLACEHOLDER = "{{}}"
-
-# `set -euo pipefail` belongs directly under the shebang, so only the opening
-# lines of a body are searched for it.
-STRICT_PREAMBLE_LINES = 3
 
 
 def check_unit(unit: JsonObject, *, is_entrypoint: bool) -> list[Finding]:

@@ -8,11 +8,8 @@ The rationale is never repeated — the cited file is the one copy of it.
 from collections.abc import Sequence
 from pathlib import Path
 
-from agent_plugins.justlint.consts import RULES, TOPIC_TEMPLATE
+from agent_plugins.justlint.consts import FILE_SUBJECT, RULES, TOPIC_TEMPLATE
 from agent_plugins.justlint.types import Finding
-
-# What a file-level finding is named by when it has no recipe.
-FILE_SUBJECT = "<file>"
 
 
 def render_audit(findings: Sequence[Finding], base: Path | None = None) -> str:
