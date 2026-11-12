@@ -65,10 +65,10 @@ current branch; nothing is pushed.
 
 ## 4. History sweep
 
-- [ ] 4.1 Run `scripts/check-private-names --history`. Verify: it exits 0 over every commit, including the OpenSpec
+- [x] 4.1 Run `scripts/check-private-names --history`. Verify: it exits 0 over every commit, including the OpenSpec
   root's and the change's own commits made before the guard existed. On any finding, stop and report it; do not rewrite
   history.
-- [ ] 4.2 Verify nothing was pushed: `git branch -vv` shows no remote branch updated by this change, and both remotes
+- [x] 4.2 Verify nothing was pushed: `git branch -vv` shows no remote branch updated by this change, and both remotes
   are left as they were.
 
 ## Workflow follow-up
