@@ -2,13 +2,13 @@
 
 ## 1. The Codex marketplace file and its test
 
-- [ ] 1.1 Fill `.agents/plugins/marketplace.json` as design.md D2 gives it: nine entries in the order of
+- [x] 1.1 Fill `.agents/plugins/marketplace.json` as design.md D2 gives it: nine entries in the order of
   `.claude-plugin/marketplace.json`. Verify: `python3 -m json.tool .agents/plugins/marketplace.json` parses it, and
   `prek run check-json --files .agents/plugins/marketplace.json` passes.
-- [ ] 1.2 Write `tests/plugins/test_agents_marketplace.py` as design.md D3 gives it. Verify: `uv run pytest
+- [x] 1.2 Write `tests/plugins/test_agents_marketplace.py` as design.md D3 gives it. Verify: `uv run pytest
   tests/plugins/test_agents_marketplace.py` passes, and fails naming the plugin when one entry is deliberately dropped
   from the `.agents` file and when one path is altered (then restore the file).
-- [ ] 1.3 Run the suite and the hooks. Verify: `uv run pytest` passes, and `prek run --all-files` passes without
+- [x] 1.3 Run the suite and the hooks. Verify: `uv run pytest` passes, and `prek run --all-files` passes without
   rewriting a file.
 
 ## 2. Codex: install, skill run, hooks, and the record's first half
