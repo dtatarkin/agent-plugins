@@ -49,7 +49,9 @@ there. This step is optional: without it, each plugin's rules still reach the
 agent through its skill.
 
 From your clone of this repository, link every scoped rule file into
-`~/.claude/rules`, one symbolic link per file named `<plugin>--<topic>.md`:
+`~/.claude/rules`, one symbolic link per file named `<plugin>--<topic>.md`.
+The script needs `python3` 3.12 or later on `PATH` and no virtual
+environment; with an older `python3` it changes nothing and exits 2:
 
 ```sh
 scripts/link-rules

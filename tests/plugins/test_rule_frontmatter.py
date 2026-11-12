@@ -79,6 +79,36 @@ def frontmatter_violations(text: str) -> list[str]:
     return violations
 
 
+def shape_violations(raw: str) -> list[str]:
+    """Violations of the one written shape a frontmatter takes.
+
+    `raw` keeps its line endings. A line-based reader (`scripts/link-rules`)
+    sees the frontmatter a YAML reader sees only when the delimiters are
+    exactly `---`, the block is closed, and `paths:` starts its line; a file
+    in any other shape could be scoped to one reader and not the other.
+    """
+    lines = raw.split("\n")
+    if lines[0].strip() != "---":
+        return []
+    violations: list[str] = []
+    if lines[0] != "---":
+        violations.append("the opening `---` line carries more than `---`")
+    close = next((index for index, line in enumerate(lines[1:], 1) if line.strip() == "---"), None)
+    if close is None:
+        violations.append("the frontmatter is not closed by a `---` line")
+        return violations
+    if lines[close] != "---":
+        violations.append("the closing `---` line carries more than `---`")
+    if declares_paths(raw) and not any(line.startswith("paths:") for line in lines[1:close]):
+        violations.append("`paths:` does not start its line")
+    return violations
+
+
+def read_raw(path: Path) -> str:
+    """The file's text with its line endings kept, as a line-based reader sees it."""
+    return path.read_bytes().decode()
+
+
 class TestEveryRuleFile:
     def test_some_rule_file_declares_paths(self) -> None:
         """Keeps the parametrized test below from passing vacuously."""
@@ -88,6 +118,10 @@ class TestEveryRuleFile:
     @pytest.mark.parametrize("path", RULE_FILES, ids=lambda path: f"{path.parts[-5]}/{path.name}")
     def test_is_linkable_or_unscoped(self, path: Path) -> None:
         assert frontmatter_violations(path.read_text()) == []
+
+    @pytest.mark.parametrize("path", RULE_FILES, ids=lambda path: f"{path.parts[-5]}/{path.name}")
+    def test_has_the_one_frontmatter_shape(self, path: Path) -> None:
+        assert shape_violations(read_raw(path)) == []
 
 
 class TestRejections:
@@ -105,6 +139,40 @@ class TestRejections:
 
     def test_an_unscoped_file_is_unconstrained(self) -> None:
         assert frontmatter_violations("# Rules\n\n@/home/someone/other.md\n") == []
+
+
+class TestShapeRejections:
+    @pytest.mark.parametrize(
+        ("text", "violation"),
+        [
+            ('--- \npaths:\n  - "x"\n---\n', "the opening `---` line carries more than `---`"),
+            ('---\npaths:\n  - "x"\n--- \n', "the closing `---` line carries more than `---`"),
+        ],
+        ids=["opening", "closing"],
+    )
+    def test_a_delimiter_with_a_trailing_space(self, text: str, violation: str) -> None:
+        assert shape_violations(text) == [violation]
+
+    def test_a_crlf_frontmatter(self) -> None:
+        text = '---\r\npaths:\r\n  - "x"\r\n---\r\nRules.\r\n'
+        assert shape_violations(text) == [
+            "the opening `---` line carries more than `---`",
+            "the closing `---` line carries more than `---`",
+        ]
+
+    def test_an_unclosed_frontmatter(self) -> None:
+        text = '---\npaths:\n  - "x"\n\nRules.\n'
+        assert shape_violations(text) == ["the frontmatter is not closed by a `---` line"]
+
+    def test_an_indented_paths_key(self) -> None:
+        text = '---\n  paths:\n    - "x"\n---\nRules.\n'
+        assert shape_violations(text) == ["`paths:` does not start its line"]
+
+    def test_a_file_without_frontmatter_is_unconstrained(self) -> None:
+        assert shape_violations("# Rules\n\n---\n") == []
+
+    def test_the_one_shape_passes(self) -> None:
+        assert shape_violations('---\npaths:\n  - "x"\n---\nRules.\n') == []
 
 
 class TestOneLayout:

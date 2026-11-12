@@ -1,26 +1,39 @@
-#!/usr/bin/env bash
-# Link this repository's path-scoped rule files into Claude Code's user-level
-# rules directory, so each attaches when a file its `paths:` names is read.
-#
-#   link-rules [PLUGIN...]            link every scoped rule file, or only
-#                                     those of the named plugins
-#   link-rules --unlink [PLUGIN...]   remove this script's links, or only
-#                                     those of the named plugins
-#   link-rules -h | --help            print this usage
-#
-# The rules directory is ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/rules. Each link
-# is named <plugin>--<topic>.md and points at the rule file in the clone this
-# script belongs to. A link is this script's own when its target lies under
-# that clone's plugins/ directory; a run removes only its own links, and never
-# replaces a file or a link it did not make.
-#
-# Exit codes: 0 done, 1 done but at least one name was held by something else
-# and skipped, 2 cannot run (usage, an unknown plugin, the rules directory
-# cannot be created, a link cannot be written).
-set -euo pipefail
+#!/usr/bin/env python3
+"""Link this repository's path-scoped rule files into Claude Code's user-level
+rules directory, so each attaches when a file its `paths:` names is read.
 
-usage() {
-	cat <<'EOF'
+  link-rules [PLUGIN...]            link every scoped rule file, or only
+                                    those of the named plugins
+  link-rules --unlink [PLUGIN...]   remove this script's links, or only
+                                    those of the named plugins
+  link-rules -h | --help            print this usage
+
+The rules directory is ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/rules. Each link
+is named <plugin>--<topic>.md and points at the rule file in the clone this
+script belongs to. A link is this script's own when its target lies under
+that clone's plugins/ directory; a run removes only its own links, and never
+replaces a file or a link it did not make.
+
+Exit codes: 0 done, 1 done but at least one name was held by something else
+and skipped, 2 cannot run (usage, an unknown plugin, the rules directory
+cannot be created, a link cannot be written, python3 older than 3.12).
+
+Standard library only, and no syntax newer than Python 3.9 parses, so that an
+older python3 reaches the version check below instead of a syntax error.
+"""
+
+import glob
+import os
+import sys
+from typing import NoReturn
+
+PROG = "link-rules"
+
+if sys.version_info < (3, 12):  # noqa: UP036 - the script runs on any python3 on PATH
+    sys.stderr.write(f"{PROG}: needs python3 3.12 or later\n")
+    sys.exit(2)
+
+USAGE = """\
 usage: link-rules [PLUGIN...]
        link-rules --unlink [PLUGIN...]
        link-rules -h | --help
@@ -29,187 +42,210 @@ Link every rule file carrying `paths:` frontmatter into
 ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/rules, one symbolic link per file named
 <plugin>--<topic>.md. Plugin names narrow the selection. --unlink removes this
 script's own links, all of them or those of the named plugins.
-EOF
-}
+"""
 
-die() {
-	printf 'link-rules: %s\n' "$1" >&2
-	exit 2
-}
 
-warn() {
-	printf 'link-rules: %s\n' "$1" >&2
-}
+def die(message: str) -> NoReturn:
+    sys.stdout.flush()
+    sys.stderr.write(f"{PROG}: {message}\n")
+    sys.exit(2)
+
+
+def warn(message: str) -> None:
+    sys.stdout.flush()
+    sys.stderr.write(f"{PROG}: {message}\n")
+
+
+def report(verb: str, link: str) -> None:
+    print(f"{verb} {os.path.basename(link)}", flush=True)
+
 
 # Physical, so a clone reached through a symbolic link still yields one stable
-# prefix: ownership below is a literal comparison against it.
-root=$(cd "$(dirname "$0")/.." && pwd -P)
-readonly root
-readonly plugins_dir="${root}/plugins"
+# prefix: ownership below is a literal comparison against it. The `..` is
+# taken lexically before resolving, as `cd dir/.. && pwd -P` does.
+ROOT = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+PLUGINS_DIR = f"{ROOT}/plugins"
 
-if [[ -n ${CLAUDE_CONFIG_DIR:-} ]]; then
-	config_dir=$CLAUDE_CONFIG_DIR
-elif [[ -n ${HOME:-} ]]; then
-	config_dir="${HOME}/.claude"
-else
-	die 'neither CLAUDE_CONFIG_DIR nor HOME is set'
-fi
-readonly dest="${config_dir}/rules"
 
-mode='link'
-case ${1:-} in
--h | --help)
-	(($# == 1)) || die "'$1' takes no argument"
-	usage
-	exit 0
-	;;
---unlink)
-	mode='unlink'
-	shift
-	;;
-esac
+def config_dir() -> str:
+    configured = os.environ.get("CLAUDE_CONFIG_DIR", "")
+    if configured:
+        return configured
+    home = os.environ.get("HOME", "")
+    if home:
+        return f"{home}/.claude"
+    die("neither CLAUDE_CONFIG_DIR nor HOME is set")
 
-# Every argument is checked before anything is touched.
-for arg; do
-	case $arg in
-	-*) die "unknown option '${arg}'" ;;
-	'' | . | .. | */*) die "no plugin named '${arg}'" ;;
-	esac
-	[[ -d ${plugins_dir}/${arg} ]] || die "no plugin named '${arg}'"
-done
 
-# Whether a rule file is scoped: its first line is `---` and a line starting
-# `paths:` comes before the next `---`. The frontmatter contract itself is
-# held by the test suite; this does not re-validate it.
-is_scoped() {
-	awk 'NR == 1 && $0 != "---" { exit }
-	     NR > 1 && $0 == "---" { exit }
-	     NR > 1 && /^paths:/ { found = 1; exit }
-	     END { exit found ? 0 : 1 }' "$1"
-}
+def is_scoped(path: str) -> bool:
+    """Whether a rule file is scoped: its first line is `---` and a line
+    starting `paths:` comes before the next `---`.
 
-# Whether a symbolic link is this script's own: its literal target, read
-# without resolving, lies under this clone's plugins/ directory. Not resolving
-# keeps a dangling link's ownership knowable.
-is_own() {
-	local target
-	target=$(readlink "$1") || return 1
-	case $target in
-	"${plugins_dir}"/*) return 0 ;;
-	*) return 1 ;;
-	esac
-}
+    Lines are bytes split on `\\n` alone, so a CRLF delimiter is not `---`. The
+    frontmatter contract itself is held by the test suite; this does not
+    re-validate it.
+    """
+    try:
+        with open(path, "rb") as handle:
+            lines = handle.read().split(b"\n")
+    except OSError:
+        return False
+    if lines[0] != b"---":
+        return False
+    for line in lines[1:]:
+        if line == b"---":
+            return False
+        if line.startswith(b"paths:"):
+            return True
+    return False
 
-# Whether an own link's target lies under one of the named plugins; with no
-# name, every own link matches.
-in_plugins() {
-	local target=$1 plugin
-	shift
-	(($# > 0)) || return 0
-	for plugin; do
-		case $target in
-		"${plugins_dir}/${plugin}"/*) return 0 ;;
-		esac
-	done
-	return 1
-}
 
-status=0
+def is_own(link: str) -> bool:
+    """Whether a symbolic link is this script's own: its literal target, read
+    without resolving, lies under this clone's plugins/ directory. Not
+    resolving keeps a dangling link's ownership knowable."""
+    try:
+        target = os.readlink(link)
+    except OSError:
+        return False
+    return target.startswith(PLUGINS_DIR + "/")
 
-# Remove every own link whose target is gone or no longer scoped, whatever the
-# arguments: only stale links go, so a narrowed run keeps live ones.
-prune() {
-	local link target
-	for link in "$dest"/*.md; do
-		[[ -L $link ]] || continue
-		is_own "$link" || continue
-		target=$(readlink "$link")
-		if [[ -f $target ]] && is_scoped "$target"; then
-			continue
-		fi
-		rm -- "$link" || die "cannot remove ${link}"
-		printf 'unlinked %s\n' "${link##*/}"
-	done
-}
 
-# Link one rule file under its name, leaving alone whatever this script does
-# not own.
-link_one() {
-	local file=$1 rel plugin topic name link target
-	rel=${file#"${plugins_dir}/"}
-	plugin=${rel%%/*}
-	topic=${file##*/}
-	topic=${topic%.md}
-	name="${plugin}--${topic}.md"
-	link="${dest}/${name}"
+def in_plugins(target: str, plugins: list[str]) -> bool:
+    """Whether an own link's target lies under one of the named plugins; with
+    no name, every own link matches."""
+    if not plugins:
+        return True
+    return any(target.startswith(f"{PLUGINS_DIR}/{plugin}/") for plugin in plugins)
 
-	if [[ -L $link ]]; then
-		if is_own "$link"; then
-			[[ $link -ef $file ]] && return 0
-		elif [[ $link -ef $file ]]; then
-			return 0
-		else
-			target=$(readlink "$link")
-			warn "${name}: held by a link to ${target} this script did not make; skipped"
-			status=1
-			return 0
-		fi
-	elif [[ -e $link ]]; then
-		warn "${name}: held by a file this script did not make; skipped"
-		status=1
-		return 0
-	fi
 
-	ln -sfn "$file" "$link" || die "cannot link ${name}"
-	printf 'linked %s\n' "$name"
-}
+def same_file(first: str, second: str) -> bool:
+    try:
+        return os.path.samefile(first, second)
+    except OSError:
+        return False
 
-# Link a candidate rule file when it is a scoped one. An unmatched glob comes
-# through as its literal pattern, which is not a regular file.
-link_candidate() {
-	[[ -f $1 ]] || return 0
-	is_scoped "$1" || return 0
-	link_one "$1"
-}
 
-link_files() {
-	local file plugin
-	if (($# == 0)); then
-		for file in "${plugins_dir}"/*/skills/*/references/*.md; do
-			link_candidate "$file"
-		done
-		return 0
-	fi
-	for plugin; do
-		for file in "${plugins_dir}/${plugin}"/skills/*/references/*.md; do
-			link_candidate "$file"
-		done
-	done
-}
+def md_links(dest: str) -> list[str]:
+    return sorted(glob.glob(f"{glob.escape(dest)}/*.md"))
 
-unlink_all() {
-	local link target
-	[[ -d $dest ]] || return 0
-	for link in "$dest"/*.md; do
-		[[ -L $link ]] || continue
-		is_own "$link" || continue
-		target=$(readlink "$link")
-		in_plugins "$target" ${1+"$@"} || continue
-		rm -- "$link" || die "cannot remove ${link}"
-		printf 'unlinked %s\n' "${link##*/}"
-	done
-}
 
-case $mode in
-link)
-	mkdir -p -- "$dest" 2>/dev/null || die "cannot create the rules directory ${dest}"
-	[[ -d $dest ]] || die "the rules directory ${dest} is not a directory"
-	prune
-	link_files ${1+"$@"}
-	;;
-unlink)
-	unlink_all ${1+"$@"}
-	;;
-esac
+def remove(link: str) -> None:
+    try:
+        os.unlink(link)
+    except OSError:
+        die(f"cannot remove {link}")
+    report("unlinked", link)
 
-exit "$status"
+
+def prune(dest: str) -> None:
+    """Remove every own link whose target is gone or no longer scoped,
+    whatever the arguments: only stale links go, so a narrowed run keeps live
+    ones."""
+    for link in md_links(dest):
+        if not os.path.islink(link) or not is_own(link):
+            continue
+        target = os.readlink(link)
+        if os.path.isfile(target) and is_scoped(target):
+            continue
+        remove(link)
+
+
+def link_one(dest: str, file: str) -> bool:
+    """Link one rule file under its name, leaving alone whatever this script
+    does not own. Returns whether the name was held by something else."""
+    rel = file[len(PLUGINS_DIR) + 1 :]
+    plugin = rel.split("/", 1)[0]
+    topic = os.path.basename(file).removesuffix(".md")
+    name = f"{plugin}--{topic}.md"
+    link = f"{dest}/{name}"
+
+    if os.path.islink(link):
+        if is_own(link):
+            if same_file(link, file):
+                return False
+        elif same_file(link, file):
+            return False
+        else:
+            warn(f"{name}: held by a link to {os.readlink(link)} this script did not make; skipped")
+            return True
+    elif os.path.lexists(link):
+        warn(f"{name}: held by a file this script did not make; skipped")
+        return True
+
+    try:
+        if os.path.islink(link):
+            os.unlink(link)
+        os.symlink(file, link)
+    except OSError:
+        die(f"cannot link {name}")
+    print(f"linked {name}", flush=True)
+    return False
+
+
+def link_files(dest: str, plugins: list[str]) -> bool:
+    """Link every scoped candidate, of every plugin or of the named ones.
+    Returns whether any name was skipped."""
+    escaped = glob.escape(PLUGINS_DIR)
+    if plugins:
+        patterns = [
+            f"{escaped}/{glob.escape(plugin)}/skills/*/references/*.md" for plugin in plugins
+        ]
+    else:
+        patterns = [f"{escaped}/*/skills/*/references/*.md"]
+    skipped = False
+    for pattern in patterns:
+        for file in sorted(glob.glob(pattern)):
+            if os.path.isfile(file) and is_scoped(file) and link_one(dest, file):
+                skipped = True
+    return skipped
+
+
+def unlink_all(dest: str, plugins: list[str]) -> None:
+    if not os.path.isdir(dest):
+        return
+    for link in md_links(dest):
+        if not os.path.islink(link) or not is_own(link):
+            continue
+        if in_plugins(os.readlink(link), plugins):
+            remove(link)
+
+
+def main(argv: list[str]) -> int:
+    dest = f"{config_dir()}/rules"
+
+    mode = "link"
+    if argv and argv[0] in ("-h", "--help"):
+        if len(argv) != 1:
+            die(f"'{argv[0]}' takes no argument")
+        sys.stdout.write(USAGE)
+        return 0
+    if argv and argv[0] == "--unlink":
+        mode = "unlink"
+        argv = argv[1:]
+
+    # Every argument is checked before anything is touched.
+    for arg in argv:
+        if arg.startswith("-"):
+            die(f"unknown option '{arg}'")
+        if arg in ("", ".", "..") or "/" in arg:
+            die(f"no plugin named '{arg}'")
+        if not os.path.isdir(f"{PLUGINS_DIR}/{arg}"):
+            die(f"no plugin named '{arg}'")
+
+    if mode == "unlink":
+        unlink_all(dest, argv)
+        return 0
+
+    try:
+        os.makedirs(dest, exist_ok=True)
+    except OSError:
+        die(f"cannot create the rules directory {dest}")
+    if not os.path.isdir(dest):
+        die(f"the rules directory {dest} is not a directory")
+    prune(dest)
+    return 1 if link_files(dest, argv) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

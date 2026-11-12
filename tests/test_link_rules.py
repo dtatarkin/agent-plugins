@@ -6,15 +6,17 @@ directories, so the real rules directory is never touched. The last test runs
 the real script over the real tree, into a throwaway configuration directory.
 """
 
+import ast
 import os
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
-from tests.plugins.test_rule_frontmatter import declares_paths
+from tests.plugins.test_rule_frontmatter import declares_paths, shape_violations
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "scripts" / "link-rules"
@@ -343,6 +345,45 @@ def test_a_plugin_is_installed() -> None:
     assert invoking == []
 
 
+# A shim run first on PATH as `python3`: the real interpreter, reporting 3.11,
+# running the script as `__main__`.
+OLD_PYTHON_SHIM = """#!/bin/sh
+exec {python} -c '
+import runpy, sys
+sys.version_info = (3, 11, 0, "final", 0)
+script = sys.argv[1]
+sys.argv = sys.argv[1:]
+runpy.run_path(script, run_name="__main__")
+' "$@"
+"""
+
+
+def test_the_interpreter_is_too_old(setup: Setup, tmp_path: Path) -> None:
+    shim_dir = tmp_path / "shim"
+    shim_dir.mkdir()
+    shim = shim_dir / "python3"
+    shim.write_text(OLD_PYTHON_SHIM.format(python=sys.executable))
+    shim.chmod(0o755)
+
+    result = setup.run(
+        env={
+            "PATH": f"{shim_dir}{os.pathsep}{os.environ['PATH']}",
+            "HOME": str(setup.home),
+            "CLAUDE_CONFIG_DIR": str(setup.config),
+        }
+    )
+
+    assert result.returncode == 2
+    assert result.stderr == "link-rules: needs python3 3.12 or later\n"
+    assert result.stdout == ""
+    assert not setup.config.exists()
+
+
+def test_the_script_parses_as_python_39() -> None:
+    """An older python3 must reach the version check, not a syntax error."""
+    ast.parse(SCRIPT.read_text(), filename=str(SCRIPT), feature_version=(3, 9))
+
+
 # Arguments.
 
 
@@ -361,6 +402,38 @@ def test_help(setup: Setup, flag: str) -> None:
     assert result.returncode == 0
     assert result.stdout.startswith("usage: link-rules")
     assert not setup.config.exists()
+
+
+# The script's line-based detection agrees with the contract's YAML reading on
+# every file the contract's shape check passes.
+
+EDGE_CASES = {
+    "no-frontmatter": "# Rules\n",
+    "no-paths": "---\ntitle: x\n---\n",
+    "paths-after-close": "---\ntitle: x\n---\npaths: x\n",
+    "paths-then-key": '---\npaths:\n  - "x"\ntitle: y\n---\n',
+    "indented-paths": '---\n  paths:\n    - "x"\n---\n',
+    "crlf": '---\r\npaths:\r\n  - "x"\r\n---\r\n',
+    "trailing-space": '--- \npaths:\n  - "x"\n---\n',
+    "unclosed": '---\npaths:\n  - "x"\n',
+    "canonical": '---\npaths:\n  - "x"\n---\n',
+}
+
+
+@pytest.mark.parametrize("case", sorted(EDGE_CASES))
+def test_detection_agrees_with_the_contract(setup: Setup, case: str) -> None:
+    text = EDGE_CASES[case]
+    path = setup.rule_file("edge-rules", case)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(text.encode())
+
+    result = setup.run("edge-rules")
+
+    assert result.returncode == 0, result.stderr
+    script_links = linked(result) == {f"edge-rules--{case}.md"}
+    if shape_violations(text):
+        return  # the contract test fails the file before it can be committed
+    assert script_links == declares_paths(text)
 
 
 # The real tree.

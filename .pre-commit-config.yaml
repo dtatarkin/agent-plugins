@@ -1,6 +1,6 @@
 # The house lint sets this repository's signals derive: the baseline set
 # (always), python (pyproject.toml and src/), markup (YAML, TOML and markdown
-# files), shell (scripts/link-rules is a bash script), and agent plugins (each plugin's
+# files), shell (the plugins' hooks/run-checker are sh scripts), and agent plugins (each plugin's
 # portable plugin.json declares the Agent Plugins schema, and its
 # .claude-plugin/ manifests and the marketplace are Claude manifests). No
 # infrastructure, web, data or workflow signal. uv.lock is tracked, so the Python set carries its lockfile hook and
@@ -114,10 +114,19 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+      # mypy names every suffix-less script `__main__`, so a second one in the
+      # same run is a duplicate module: link-rules is checked in a run of its
+      # own, under the same configuration.
+      - id: mypy-link-rules
+        name: mypy (link-rules)
+        entry: uv run mypy scripts/link-rules
+        language: system
+        files: ^scripts/link-rules$
+        pass_filenames: false
       - id: ty
         name: ty
-        # The guard script has no `.py` suffix, so it is named on its own.
-        entry: uv run ty check src tests scripts/check-private-names
+        # The scripts have no `.py` suffix, so they are named on their own.
+        entry: uv run ty check src tests scripts/check-private-names scripts/link-rules
         language: system
         types: [python]
         pass_filenames: false
