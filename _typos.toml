@@ -1,9 +1,12 @@
 [files]
 # The files `openspec update` generates, and the archive of closed changes.
+# And the lockfile, which is not text anyone wrote: a hash that spells a word
+# is not a typo.
 extend-exclude = [
   ".claude/commands/opsx/",
   ".claude/skills/openspec-*/",
   "openspec/changes/archive/",
+  "uv.lock",
 ]
 
 [default.extend-words]

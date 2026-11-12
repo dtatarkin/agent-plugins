@@ -1,0 +1,97 @@
+[project]
+name = "agent-plugins"
+version = "0.1.0"
+description = "The checkers behind the lint-rules and just-rules agent plugins: lint-lint and just-lint."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = ["typer>=0.12", "ruamel.yaml>=0.18"]
+
+# Distributed from the git remote (`uv tool install git+<remote>` / `uvx`),
+# never PyPI.
+[project.scripts]
+# A plain function, not a typer app: `just-lint hook` runs on every governed
+# justfile edit and at every turn end, and an app here would import typer each
+# time. The function dispatches on its first argument and builds the `check`
+# CLI only in that branch.
+just-lint = "agent_plugins.justlint.entry:main"
+# Its twin for the lint standard, a plain function for the same reason: `hook`
+# runs on every governed lint-configuration edit and at every turn end.
+lint-lint = "agent_plugins.lintlint.entry:main"
+
+[tool.uv]
+# The lockfile resolves under the same release-age cooldown as the hook pins.
+# Stated here and not on a command line: the lockfile hook runs a plain
+# `uv lock`, which drops a cutoff a flag gave. A fix younger than this is
+# admitted by an `exclude-newer-package` line naming the advisory it closes.
+exclude-newer = "7 days"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_plugins"]
+
+[dependency-groups]
+dev = [
+  "ruff>=0.6",
+  "mypy>=1.11",
+  # The second type checker of the house pair, and the justfile formatter the
+  # commit hook runs (the justfile checker's tests run it too). Both are pinned
+  # here rather than in a hook entry: a hook resolves a tool the lockfile pins
+  # through `uv run`, so the lockfile is where the version has to be visible.
+  "ty>=0.0.1",
+  "rust-just>=1.40",
+  "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "UP",  # pyupgrade
+  "SIM", # flake8-simplify
+  "RUF", # ruff-specific
+  "TID", # flake8-tidy-imports: banned-api below forbids `__future__`
+  "S",   # flake8-bandit: the security rules, in place of a separate scanner
+]
+ignore = [
+  # Both flag calling a subprocess, and calling one by name rather than by
+  # absolute path. Calling tools by name is a standing contract here — it is
+  # how a command finds a pinned toolchain without reaching outside its own
+  # repository — so these two fire on correct code every time.
+  "S603", # subprocess call: check for execution of untrusted input
+  "S607", # start process with a partial executable path
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests are made of asserts, and of fixtures named password, secret and token:
+# the three credential rules match the name, never the value. The secret scan
+# reads `tests/` like any other path and stays the gate for a real one.
+"tests/**" = ["S101", "S105", "S106", "S107"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"__future__".msg = "from __future__ imports are forbidden (Python floor is 3.12)"
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "src"
+files = ["src/agent_plugins"]

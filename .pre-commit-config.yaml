@@ -1,7 +1,8 @@
 # The house lint sets this repository's signals derive: the baseline set
-# (always), markup (YAML, TOML and markdown files) and shell (the guard is a
-# bash script). No Python, infrastructure, web or data signal. The repository
-# tracks no lockfile, so the local formatter hooks call their tools by name.
+# (always), python (pyproject.toml and src/), markup (YAML, TOML and markdown
+# files) and shell (the guard is a bash script). No infrastructure, web or data
+# signal. uv.lock is tracked, so the Python set carries its lockfile hook and
+# its audit, and every local hook the lockfile can pin runs through `uv run`.
 #
 # There is no top-level `exclude:`: it would exempt paths from the
 # private-names guard too, and nothing is exempt from that. A tree a hook must
@@ -80,13 +81,60 @@ repos:
     hooks:
       - id: typos
 
-  # Baseline: justfile and nix formatting, by name (no lockfile pins them);
-  # inert while the repository holds no justfile and no nix file.
+  # Python: lint and format.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.3
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+        types_or: [python, pyi, jupyter]
+
+  # Python: packaging.
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.13.7
+    hooks:
+      - id: uv-lock
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: "v0.27"
+    hooks:
+      - id: validate-pyproject
+
+  # Python: the type-checking pair, through the lockfile, and the dependency
+  # audit on demand.
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: ty
+        name: ty
+        entry: uv run ty check src tests
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: pip-audit
+        name: pip-audit
+        entry: >-
+          bash -c 'uv export --no-hashes --no-emit-workspace --no-dev --quiet
+          | uvx --quiet pip-audit --requirement /dev/stdin --disable-pip --no-deps --strict'
+        language: system
+        stages: [manual]
+        always_run: true
+        pass_filenames: false
+
+  # Baseline: justfile formatting through the lockfile, which pins `just`, and
+  # nix formatting by name; inert while the repository holds no justfile and no
+  # nix file.
   - repo: local
     hooks:
       - id: format-justfile
         name: format justfile
-        entry: bash -c 'for f in "$@"; do just --fmt --unstable --justfile "$f"; done' --
+        entry: bash -c 'for f in "$@"; do uv run just --fmt --unstable --justfile "$f"; done' --
         language: system
         files: (^|/)justfile$|\.just$
       - id: nixfmt
