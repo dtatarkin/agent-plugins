@@ -38,9 +38,34 @@ written for it first.
   git+https://github.com/dtatarkin/agent-plugins`, run with uv's tool and
   cache directories of their own and the same anonymous Git, built
   `agent-plugins` 0.1.0 from that commit and installed the two executables
-  `just-lint` and `lint-lint`; both answer `--help`.
-- Skill run: not yet run; it waits for the configuration to be signed in.
-- Hooks: not yet observed; they wait for the skill run.
+  `just-lint` and `lint-lint`; both answer `--help`. Only these, not any
+  other copy, were on the `PATH` of the runs below.
+- Skill run:
+  - Command form: `claude -p "<prompt>" --model sonnet --output-format
+    stream-json --verbose --include-hook-events --allowedTools Read`, in an
+    empty scratch directory. A headless run needs the explicit `--model`.
+  - Prompt: the same as for Codex and the Antigravity CLI below.
+  - Outcome: Claude Code invoked the skill `python-rules:python`, read
+    `references/config.md` from the plugin's folder in its cache, and
+    answered by quoting that file's first rule (configuration validated
+    through `pydantic-settings` settings classes, never bare `os.getenv`),
+    naming the file. A first run without `--allowedTools Read` loaded the
+    skill but was refused the topic file, because print mode's default
+    permissions deny reading outside the working directory; it then
+    declined to answer from memory.
+- Hooks: fired. Both runs show `lint-rules`' `SessionStart` hook and its
+  `Stop` hook, each exiting 0 with no output: with `lint-lint` on the `PATH`,
+  the session-start notice stays silent. A further print-mode run, in
+  `--permission-mode acceptEdits`, in a scratch Git repository holding a
+  staged `pyproject.toml` and one Python file, wrote a `ruff.toml` lacking
+  the house values. Its `PreToolUse` hook took the (empty) baseline; its
+  `PostToolUse` hook returned two `config-value` findings for `ruff.toml`
+  (`lint.ignore`, `lint.select`) as context introduced by the edit; its
+  `Stop` hook blocked the turn once, naming the same two findings, and let
+  it end on the second attempt. An earlier attempt to have the run write a
+  `.pre-commit-config.yaml` instead was refused by Claude Code as a write to
+  a sensitive file, after the `PreToolUse` hook had run.
+- The test installs were left installed in that configuration.
 
 ## Codex
 
@@ -118,9 +143,26 @@ written for it first.
   `ON_INSTALL`, into `plugins/cache/agent-plugins/<name>/<version>`.
   `codex plugin list --available --json` shows `python-rules` and
   `lint-rules` installed and enabled from `agent-plugins`, and the other
-  seven plugins available with the install policy `AVAILABLE`.
-- Skill run: not yet run; it waits for the configuration to be signed in.
-- Hooks: not yet observed; they wait for the skill run.
+  seven plugins available with the install policy `AVAILABLE`. Codex's app
+  server reports `lint-rules` with the category `Coding` and the skill
+  `lint-rules:lint`.
+- Skill run:
+  - Command form: the same as for the local clone, `codex exec
+    --skip-git-repo-check --ephemeral -s read-only -C <scratch> --json
+    "<prompt>"`, in an empty scratch directory, with standard input closed
+    (otherwise `codex exec` waits to read more of the prompt from it).
+  - Prompt: the same as for the local clone.
+  - Outcome: Codex read the plugin's `SKILL.md` from its plugin cache, then
+    `references/config.md`, and answered by quoting that file's first rule,
+    naming the file.
+- Hooks: not loaded, as with the local clone. The app server's `plugin/read`
+  gives `lint-rules` an empty hook list, and its `hooks/list` is empty for
+  both scratch directories, so no hook-trust step arose. The skill run's
+  event stream held no hook event, nor did a second print-mode run, with
+  `-s workspace-write`, that wrote a `.pre-commit-config.yaml` in a scratch
+  directory; that run read the `lint` skill unprompted before writing the
+  file. `--dangerously-bypass-hook-trust` was not passed.
+- The test installs were left installed in that configuration.
 
 ## Antigravity CLI
 
@@ -202,5 +244,19 @@ written for it first.
   the folder installed to, `config/plugins/<name>` of `agy`'s `.gemini`
   folder. `agy plugin list --json` shows `python-rules` 0.1.0 and
   `lint-rules` 0.5.0 enabled, each with its one skill.
-- Skill run: not yet run; it waits with those of the other hosts.
-- Hooks: not yet observed; they wait for the skill run.
+- Sign-in: not isolated. With its own home directory, `agy` still reached
+  the owner's existing sign-in, which it keeps in the desktop session's
+  keyring rather than under `.gemini`; only its configuration and plugin
+  state were isolated.
+- Skill run:
+  - Command form: the same as for the local clone, `agy -p "<prompt>"
+    --output-format json --mode plan`, run from an empty scratch directory.
+  - Prompt: the same as for Codex.
+  - Outcome: `agy` read the plugin's `SKILL.md` and then
+    `references/config.md` from its plugin folder, and answered by quoting
+    that file's opening and its first rule, naming the file.
+- Hooks: not loaded, as with the local clone. The install summaries named no
+  hook. A second print-mode run, in `--mode accept-edits`, wrote a
+  `.pre-commit-config.yaml` in a scratch directory with no hook step, and
+  `agy`'s log for that run reports no hooks loaded from any `hooks.json`.
+- The test installs were left installed in that configuration.
