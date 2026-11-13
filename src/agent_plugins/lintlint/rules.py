@@ -39,6 +39,10 @@ from agent_plugins.lintlint.consts import (
     HOSTED_FORM_TOOLS,
     HOSTED_URL_TEMPLATE,
     HOUSE_HOOKS,
+    LYCHEE_ID,
+    LYCHEE_REPO,
+    LYCHEE_TAG_PREFIX,
+    LYCHEE_VERSION_ARG,
     MARKUP_TYPES,
     PINLESS_REPOS,
     PROJECT_FILE,
@@ -154,10 +158,12 @@ def _check_hook_config(path: Path, config: HookConfig, signals: Signals) -> Iter
     yield from _check_hook_set(path, config, signals)
     yield from _check_pins(path, config)
     yield from _check_order(path, config)
+    revs = dict(config.pins)
     for hook in config.hooks:
         yield from _check_retired(path, hook)
         if _is_house_entry(hook):
             yield from _check_args(path, hook)
+        yield from _check_version_override(path, hook, revs.get(hook.repo))
         yield from _check_form(path, hook, signals)
 
 
@@ -278,6 +284,29 @@ def _check_args(path: Path, hook: HookEntry) -> Iterator[Finding]:
         yield wrong("`stages: [manual]` is missing", canon.topic)
     if canon.always_run and hook.always_run is not True:
         yield wrong("`always_run: true` is missing", canon.topic)
+
+
+def _check_version_override(path: Path, hook: HookEntry, rev: str | None) -> Iterator[Finding]:
+    """The hosted link checker's first argument, naming the version its pin
+    tags. A pin that is not a `lychee-v` tag yields no version to compare, so
+    only the override's presence is asked of it.
+    """
+    if hook.id != LYCHEE_ID or LYCHEE_REPO not in hook.repo:
+        return
+    first = hook.args[0] if hook.args else ""
+    expected = (
+        rev.removeprefix(LYCHEE_TAG_PREFIX)
+        if rev is not None and rev.startswith(LYCHEE_TAG_PREFIX)
+        else None
+    )
+    owed = f"`{LYCHEE_VERSION_ARG}{expected or '<version>'}`"
+    if not first.startswith(LYCHEE_VERSION_ARG):
+        detail = f"{owed} is not the first argument"
+    elif expected is not None and first != f"{LYCHEE_VERSION_ARG}{expected}":
+        detail = f"`{first}` does not match the pin `{rev}`: write {owed}"
+    else:
+        return
+    yield Finding(path, hook.id, RuleId.HOOK_ARGS, detail, "markup")
 
 
 def _check_form(path: Path, hook: HookEntry, signals: Signals) -> Iterator[Finding]:

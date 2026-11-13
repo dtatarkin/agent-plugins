@@ -139,7 +139,7 @@ formatting.
   - repo: https://github.com/lycheeverse/lychee
     hooks:
       - id: lychee
-        args: [--offline, --no-progress]
+        args: [LYCHEE_VERSION=<version>, --offline, --no-progress]
         types: [markdown]
 ```
 
@@ -150,6 +150,13 @@ written, and this reads whether what it points at is there.
 - **`--offline`** limits the check to local targets, so a commit never waits
   on a remote host and never fails because one is down. Fragments stay
   unchecked, the tool's default, which leaves anchors to the markdown linter.
+- **`LYCHEE_VERSION=<version>`, first**, where `<version>` is the `rev:`
+  without its `lychee-v` prefix. Without it, the hook script finds its own
+  version with `git describe --tags` inside its checkout. On a commit from a
+  linked worktree, git hands the hook `GIT_DIR`, so that lookup reads the
+  committing repository, finds no `lychee-v*` tag, and the hook fails before
+  checking a link. The override skips the lookup. The script reads it only as
+  the first argument.
 - **The args trap.** `args:` replaces upstream's, which are `--no-progress`
   alone, so the entry writes both flags; with `--offline` only, the progress
   output comes back.

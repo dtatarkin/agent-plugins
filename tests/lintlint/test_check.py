@@ -120,7 +120,7 @@ repos:
     rev: lychee-v0.24.2
     hooks:
       - id: lychee
-        args: [--offline, --no-progress]
+        args: [LYCHEE_VERSION=0.24.2, --offline, --no-progress]
         types: [markdown]
 
   - repo: https://github.com/rhysd/actionlint

@@ -42,6 +42,10 @@ The link checker's repository tags its releases **`lychee-v<version>`**,
 beside tags for its library crate, bare `v` tags from before that naming, and a
 moving `nightly` pre-release. **Its pin is a `lychee-v*` tag**: check that the
 updater landed on one, by name as well as by date.
+**Its version override moves with the `rev:`**: the entry's
+`LYCHEE_VERSION=<version>` argument names the same release without the
+`lychee-v` prefix, and the updater does not touch it. Bump both in one edit;
+an override left behind installs the old tool under the new pin.
 
 **`pre-commit autoupdate` is not this procedure.** It knows no cooldown, so it
 takes today's release; and it prefers the moving tag, so it moves a good pin

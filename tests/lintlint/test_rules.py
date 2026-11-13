@@ -177,8 +177,8 @@ class TestCanonicalArguments:
             ("        types_or: [python, pyi, jupyter]\n", "", "ruff-format", "types_or"),
             ("        args: [--fix=lf]\n", "", "mixed-line-ending", "--fix=lf"),
             ("rumdl-check\n        args: [--fix]\n", "rumdl-check\n", "rumdl-check", "--fix"),
-            ("[--offline, --no-progress]", "[--no-progress]", "lychee", "--offline"),
-            ("[--offline, --no-progress]", "[--offline]", "lychee", "--no-progress"),
+            (", --offline, --no-progress]", ", --no-progress]", "lychee", "--offline"),
+            (", --offline, --no-progress]", ", --offline]", "lychee", "--no-progress"),
         ],
     )
     def test_the_argument_is_named(
@@ -188,6 +188,51 @@ class TestCanonicalArguments:
         findings = audit(lint_data_tree)
         assert pairs(findings) == {(hook, "hook-args")}
         assert named in findings[0].detail
+
+    @pytest.mark.parametrize(
+        "args",
+        [
+            "[--offline, --no-progress]",
+            "[--offline, LYCHEE_VERSION=0.24.2, --no-progress]",
+        ],
+    )
+    def test_the_link_checker_without_its_version_first(
+        self, lint_data_tree: Path, args: str
+    ) -> None:
+        edit(lint_data_tree, "[LYCHEE_VERSION=0.24.2, --offline, --no-progress]", args)
+        findings = audit(lint_data_tree)
+        assert pairs(findings) == {("lychee", "hook-args")}
+        assert "`LYCHEE_VERSION=0.24.2` is not the first argument" in findings[0].detail
+
+    def test_a_stale_link_checker_version_names_both(self, lint_data_tree: Path) -> None:
+        edit(lint_data_tree, "LYCHEE_VERSION=0.24.2", "LYCHEE_VERSION=0.23.0")
+        findings = audit(lint_data_tree)
+        assert pairs(findings) == {("lychee", "hook-args")}
+        assert "0.23.0" in findings[0].detail
+        assert "lychee-v0.24.2" in findings[0].detail
+
+    def test_a_link_checker_pin_without_its_tag_prefix_asks_only_for_an_override(
+        self, lint_data_tree: Path
+    ) -> None:
+        edit(lint_data_tree, "rev: lychee-v0.24.2", "rev: v0.15.1")
+        assert audit(lint_data_tree) == []
+        edit(lint_data_tree, "[LYCHEE_VERSION=0.24.2, ", "[")
+        findings = audit(lint_data_tree)
+        assert pairs(findings) == {("lychee", "hook-args")}
+        assert "`LYCHEE_VERSION=<version>`" in findings[0].detail
+
+    def test_a_local_link_checker_is_the_projects(self, lint_data_tree: Path) -> None:
+        edit(
+            lint_data_tree,
+            "https://github.com/lycheeverse/lychee\n    rev: lychee-v0.24.2",
+            "local",
+        )
+        edit(
+            lint_data_tree,
+            "[LYCHEE_VERSION=0.24.2, --offline, --no-progress]\n",
+            "[--offline, --no-progress]\n        entry: lychee\n        language: system\n",
+        )
+        assert audit(lint_data_tree) == []
 
     def test_the_second_scanner_without_its_exit_code(self, terraform_tree: Path) -> None:
         edit(terraform_tree, "--exit-code 1 ", "")
@@ -617,7 +662,7 @@ repos:
     rev: lychee-v0.24.2
     hooks:
       - id: lychee
-        args: [--offline, --no-progress]
+        args: [LYCHEE_VERSION=0.24.2, --offline, --no-progress]
         types: [markdown]
 
   - repo: local

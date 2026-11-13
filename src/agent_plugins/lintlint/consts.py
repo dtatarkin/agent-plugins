@@ -228,6 +228,15 @@ DBT_PARSE_ID = "dbt-parse"
 TYPOS_REPO = "crate-ci/typos"
 TYPOS_MOVING_TAG = "v1"
 
+# The link checker's hosted script hook, its tag prefix, and the first argument
+# that names its version. Without that argument the script finds its version
+# with `git describe` inside its checkout, which a linked worktree's `GIT_DIR`
+# redirects to the committing repository.
+LYCHEE_REPO = "lycheeverse/lychee"
+LYCHEE_ID = "lychee"
+LYCHEE_TAG_PREFIX = "lychee-v"
+LYCHEE_VERSION_ARG = "LYCHEE_VERSION="
+
 # Hook repositories with no pin to compare.
 PINLESS_REPOS = frozenset({"local", "meta"})
 

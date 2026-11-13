@@ -179,12 +179,14 @@ repos:
         exclude: ^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)
 
   # Markup: links. A dead link in the closed-change archive is history, so the
-  # archive is excluded here too, by the rewriting hooks' pattern.
+  # archive is excluded here too, by the rewriting hooks' pattern. The version
+  # override lets the hook run on a commit from a linked worktree; it moves
+  # with `rev:`.
   - repo: https://github.com/lycheeverse/lychee
     rev: lychee-v0.24.2
     hooks:
       - id: lychee
-        args: [--offline, --no-progress]
+        args: [LYCHEE_VERSION=0.24.2, --offline, --no-progress]
         types: [markdown]
         exclude: ^(\.claude/commands/opsx/|\.claude/skills/openspec-[^/]+/|openspec/changes/archive/)
 
