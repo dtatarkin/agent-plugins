@@ -6,10 +6,45 @@ once, with its result. `<clone>` stands for a local clone of this repository.
 ## Claude Code
 
 Claude Code is the plugins' primary host: the plugins and their hooks are
-written for it first. Its install from GitHub is recorded here once the
-repository is public.
+written for it first.
+
+### Install from GitHub
+
+- Host version: Claude Code 2.1.322.
+- Date: 2026-11-13.
+- Source: GitHub, the public repository at the commit its plugin tags mark.
+- Clean account: a configuration directory of its own holding no plugin and
+  no marketplace beyond the built-in directory, and Git with no global or
+  system configuration (so no credential helper), no token in the
+  environment, prompts off and SSH disabled. The fetch therefore succeeded
+  only because the repository is public.
+- Install form run: the command-line equivalent of the README's `/plugin`
+  lines:
+
+  ```sh
+  claude plugin marketplace add dtatarkin/agent-plugins
+  claude plugin install python-rules@agent-plugins
+  claude plugin install lint-rules@agent-plugins
+  ```
+
+- Outcome: Claude Code reported SSH not configured and cloned over HTTPS,
+  validated the marketplace and added it as `agent-plugins` (source: GitHub);
+  its clone lists all nine plugins. Both installs succeeded at user scope;
+  `claude plugin list` shows `lint-rules` 0.5.0 and `python-rules` 0.1.0
+  enabled, each copied into `plugins/cache/agent-plugins/<name>/<version>`
+  of the configuration directory and recorded against the commit it came
+  from.
+- Checkers: the README's `uv tool install
+  git+https://github.com/dtatarkin/agent-plugins`, run with uv's tool and
+  cache directories of their own and the same anonymous Git, built
+  `agent-plugins` 0.1.0 from that commit and installed the two executables
+  `just-lint` and `lint-lint`; both answer `--help`.
+- Skill run: not yet run; it waits for the configuration to be signed in.
+- Hooks: not yet observed; they wait for the skill run.
 
 ## Codex
+
+### Install from a local clone
 
 - Host version: `codex-cli` 0.167.2, read before and after the runs.
 - Date: 2026-11-12.
@@ -60,9 +95,36 @@ repository is public.
   scratch directory. `--dangerously-bypass-hook-trust` was not passed.
 - The test installs were left installed, and the local marketplace left
   registered.
-- Install from GitHub: not yet run; recorded once the repository is public.
+
+### Install from GitHub
+
+- Host version: `codex-cli` 0.167.2.
+- Date: 2026-11-13.
+- Source: GitHub, the public repository at the commit its plugin tags mark.
+- Clean account: a Codex configuration directory of its own holding no
+  plugin and no marketplace, and the same anonymous Git as for Claude Code.
+- Install form run:
+
+  ```sh
+  codex plugin marketplace add dtatarkin/agent-plugins --json
+  codex plugin add python-rules@agent-plugins --json
+  codex plugin add lint-rules@agent-plugins --json
+  ```
+
+- Outcome: the marketplace was added under the name `agent-plugins`, as a
+  `git` source naming the repository's HTTPS URL in Codex's configuration,
+  cloned into `.tmp/marketplaces/agent-plugins` of the configuration
+  directory. Both installs succeeded, each with the authentication policy
+  `ON_INSTALL`, into `plugins/cache/agent-plugins/<name>/<version>`.
+  `codex plugin list --available --json` shows `python-rules` and
+  `lint-rules` installed and enabled from `agent-plugins`, and the other
+  seven plugins available with the install policy `AVAILABLE`.
+- Skill run: not yet run; it waits for the configuration to be signed in.
+- Hooks: not yet observed; they wait for the skill run.
 
 ## Antigravity CLI
+
+### Install from a local clone
 
 - Host version: `agy` 1.5.7, read before and after the runs.
 - Date: 2026-11-12.
@@ -118,4 +180,27 @@ repository is public.
   `hooks.json`. That run read the `lint` skill unprompted before writing the
   file.
 - The test installs were left installed.
-- Install from GitHub: not yet run; recorded once the repository is public.
+
+### Install from GitHub
+
+- Host version: `agy` 1.5.7.
+- Date: 2026-11-13.
+- Source: GitHub, cloned over HTTPS from the public repository at the commit
+  its plugin tags mark.
+- Clean account: a home directory of its own, so `agy`'s `.gemini` folder
+  starts with no plugin, and the same anonymous Git as for Claude Code.
+- Install form run, the README's:
+
+  ```sh
+  git clone https://github.com/dtatarkin/agent-plugins
+  agy plugin install agent-plugins/plugins/python-rules
+  agy plugin install agent-plugins/plugins/lint-rules
+  ```
+
+- Outcome: the clone succeeded with no credentials. Both installs succeeded;
+  each summary named one skill installed (`python`, `lint`) and no hook, and
+  the folder installed to, `config/plugins/<name>` of `agy`'s `.gemini`
+  folder. `agy plugin list --json` shows `python-rules` 0.1.0 and
+  `lint-rules` 0.5.0 enabled, each with its one skill.
+- Skill run: not yet run; it waits with those of the other hosts.
+- Hooks: not yet observed; they wait for the skill run.
