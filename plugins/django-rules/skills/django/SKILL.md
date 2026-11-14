@@ -13,8 +13,15 @@ Read the topic that matches the work:
 
 | You are editing… | Read |
 |------------------|------|
-| Models, fields, managers, querysets | `references/models.md` |
-| django-ninja routers, schemas, API endpoints | `references/ninja.md` |
+| Model classes — `__str__`, mixins, managers, querysets, `Meta` | `references/models.md` |
+| Model fields, choices, status columns | `references/fields.md` |
+| Model relations — `related_name`, `on_delete`, inheritance, many-to-many | `references/relations.md` |
+| Model validation, `clean()`, uniqueness constraints | `references/constraints.md` |
+| django-ninja APIs — endpoint files, routers, `NinjaAPI` instances | `references/ninja.md` |
+| API request and response schemas, serialization | `references/ninja-schemas.md` |
+| API authentication and authorization | `references/ninja-auth.md` |
+| API exceptions and error responses | `references/ninja-errors.md` |
+| API handler bodies — services, transactions, parameters, async | `references/ninja-handlers.md` |
 | `ModelAdmin`, admin registration, admin forms | `references/admin.md` |
 | Settings modules, `INSTALLED_APPS`, env config | `references/settings.md` |
 | App layout — `models/`/`admin/`/`tasks/`, signals, Celery tasks, app nesting | `references/structure.md` |
