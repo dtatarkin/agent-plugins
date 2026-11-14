@@ -10,12 +10,10 @@ Antigravity CLI.
 
 - **Change:** `host-support-record-and-tags`
 - **After:** —
-- **State:** planned
+- **State:** active
 - **Effort:** s
 
-A `host-support` delta: the record requirement names Claude Code beside Codex
-and the Antigravity CLI, and a new requirement says when a plugin's version is
-bumped and tagged with `claude plugin tag`, and that tags go to both remotes.
+Scope in the change: the record as a per-host table, and version bumps and tags.
 
 ### HH2 Hooks in Codex and the Antigravity CLI
 
