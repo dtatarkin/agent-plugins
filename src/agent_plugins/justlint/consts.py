@@ -20,7 +20,12 @@ RULES: dict[RuleId, Rule] = {
     RuleId.MODULE_PREAMBLE: Rule(
         "add `source_file := source_file()` and a `list` recipe", "modules"
     ),
-    RuleId.PARSE: Rule("fix the syntax `just` refuses", "consumer"),
+    # No topic covers syntax itself. The one rule about what must parse is the
+    # optional `mod?` / `import?` of a file that may be missing, in `consumer`.
+    RuleId.PARSE: Rule(
+        "fix the syntax `just` refuses; load a file that may be missing with `mod?` / `import?`",
+        "consumer",
+    ),
 }
 
 # How a rule file is cited: `skills/just/references/<topic>.md`, relative to the plugin.

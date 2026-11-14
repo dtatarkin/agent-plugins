@@ -26,8 +26,8 @@ paths:
 
   ```just
   [positional-arguments]
-  dbt cmd *args:
-      shift; uv run dbt {{ quote(cmd) }} --project-dir dbt_proj "$@"
+  tool cmd *args:
+      shift; uv run tool {{ quote(cmd) }} --config conf/tool.toml "$@"
   ```
 
 - **For a single named parameter interpolated into shell text**, escape it with
@@ -48,13 +48,13 @@ paths:
 
   ```just
   # prefer
-  [doc("List the per-session keys in the sessions KV bucket")]
-  sessions-ls: (nats "kv" "ls" "sessions")
+  [doc("List the keys of the cache store")]
+  cache-ls: (store "keys" "ls" "cache")
 
   # not
-  [doc("List the per-session keys in the sessions KV bucket")]
-  sessions-ls:
-      just nats kv ls sessions
+  [doc("List the keys of the cache store")]
+  cache-ls:
+      just store keys ls cache
   ```
 
   Fixed literal args pass cleanly — each literal is one argument. A **variadic**

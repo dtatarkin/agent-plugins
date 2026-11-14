@@ -18,18 +18,19 @@ paths:
   the `[doc("…")]` string in a comment; a recipe that needs no extra context has
   its `[doc("…")]` and no comment at all.
 - **Separate a rationale comment from the recipe with one blank line.** Not
-  cosmetic: `just` binds a comment line *touching* a recipe as its doc-comment,
-  and `just --fmt` then **deletes that line** because `[doc("…")]` supersedes it
-  — silently dropping your last line of rationale.
+  cosmetic: `just` binds the last comment line *touching* a recipe as its
+  doc-comment. `[doc("…")]` outranks it, but the binding stays: drop or lose
+  the attribute and that line of rationale becomes the help text
+  `just --list` prints.
 
   ```just
-  # dbt wants these at the subcommand level, not the top level, so `dbt <cmd>
-  # [args]` becomes `dbt <cmd> --project-dir … --profiles-dir … [args]`.
+  # The tool reads its config only at the subcommand level, so
+  # `tool <cmd> [args]` becomes `tool <cmd> --config conf/tool.toml [args]`.
 
-  [doc("Wrap `dbt` with the project/profiles dirs baked in")]
+  [doc("Wrap `tool` with its config baked in")]
   [positional-arguments]
-  dbt cmd *args:
-      shift; uv run dbt {{ quote(cmd) }} --project-dir dbt_proj --profiles-dir dbt_proj "$@"
+  tool cmd *args:
+      shift; uv run tool {{ quote(cmd) }} --config conf/tool.toml "$@"
   ```
 
 - **Don't hand-order attributes.** `just --fmt` sorts them alphabetically
@@ -69,7 +70,7 @@ paths:
 
 ## Formatting
 
-Format with `just just::format <justfile>` (a wrapper over
-`just --fmt --unstable`) before committing any justfile change. Commit hooks
-reject an unformatted justfile, so don't fight the formatter — let it normalize
-spacing and alignment.
+Format with `just --fmt --unstable --justfile <justfile>` before committing
+any justfile change — through the shared `just::format` recipe where that
+module is loaded. Don't fight the formatter: let it normalize spacing and
+alignment, since a commit hook that checks formatting rejects anything else.
