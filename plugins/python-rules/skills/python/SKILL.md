@@ -1,6 +1,6 @@
 ---
 name: python
-description: General Python conventions and patterns — typing, configuration, command-line interfaces, error handling, services/use-cases, dependency injection, testing, file organization, comments. Load when writing Python code, independent of framework.
+description: General Python conventions and patterns — typing, configuration, command-line interfaces, scripts (Python, not shell), error handling, services/use-cases, dependency injection, testing, file organization, comments. Load when writing Python code or a script you would otherwise write in shell, independent of framework.
 ---
 
 # Python rules
@@ -14,6 +14,7 @@ to the change, then follow them.
 | Type hints, enums, structured returns | `references/typing.md` |
 | Env/config loading | `references/config.md` |
 | Command-line interfaces / entry points | `references/cli.md` |
+| A script, or logic you would write as shell | `references/scripts.md` |
 | Error handling / raising vs returning failures | `references/error-handling.md` |
 | Service / use-case modules | `references/services.md` |
 | Dependency-injection wiring | `references/dependency-injection.md` |
@@ -26,6 +27,7 @@ Some topics live in other domains, and this router points rather than repeats:
 | You are editing… | Read |
 |------------------|------|
 | Which type checker runs, and the lint gates a Python repository wires | `lint-rules:lint` → its `applying.md` and `python.md` |
+| Where loose scripts with no project file declare their dependencies | `lint-rules:lint` → its `python.md` |
 
 If a change spans several topics, read each relevant file. Do not guess at the
 rules — read the file.

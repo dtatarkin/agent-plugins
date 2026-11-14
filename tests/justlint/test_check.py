@@ -4,8 +4,9 @@ The umbrella case is a synthetic umbrella repository: a root justfile that
 loads three nested repositories with `mod` and imports a `.just` dotfile. Its
 legacy recipes are planted to give this block:
 
-    justfile  [6]
+    justfile  [7]
         - provision: public recipe without [doc] (bare-comment help)
+        - provision: a script in a shebang body
         - serve: public recipe without [doc] (no help at all)
         - serve: splats variadic {{ args }} into body
         - shell: public recipe without [doc] (bare-comment help)
@@ -27,6 +28,7 @@ from agent_plugins.justlint.cli import app
 # The umbrella's block for its root justfile, as rule ids.
 UMBRELLA_FINDINGS = {
     ("provision", "doc-attr"),
+    ("provision", "script"),
     ("serve", "doc-attr"),
     ("serve", "splat"),
     ("shell", "doc-attr"),

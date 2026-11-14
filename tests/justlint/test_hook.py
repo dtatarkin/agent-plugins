@@ -5,7 +5,8 @@ The first sequence replays the hook spike's `real-lint-noattach` run of
 2026-09-11 verbatim — the legacy file it started from, the edit that added
 `test` and `release`, and the follow-up that fixed them. The prototype
 reported four findings after the first edit and stayed silent after the
-second; so must this.
+second. The rules have moved since: a two-line body is now a command or two,
+so `release` keeps it, and three of the four findings remain.
 """
 
 from collections.abc import Callable
@@ -47,17 +48,14 @@ test *args:
 
 [doc("Bump version and create git tag")]
 release:
-    #!/usr/bin/env bash
-    set -euo pipefail
     uv version --bump patch
     git tag v$(uv version)
 """
 )
 
-# What the spike's prototype reported after the first edit.
+# What the spike's prototype reported after the first edit, less what the rules dropped.
 SPIKE_FINDINGS = [
     ("release", "doc-attr"),
-    ("release", "shebang"),
     ("test", "doc-attr"),
     ("test", "splat"),
 ]
@@ -75,7 +73,7 @@ def _reported(answer: JsonObject | None) -> list[str]:
 
 
 class TestSpikeSequence:
-    def test_four_findings_after_the_first_edit(
+    def test_the_spike_findings_after_the_first_edit(
         self,
         justfile_tree_builder: Callable[..., Path],
         hook_builder: Callable[..., JsonObject | None],
@@ -173,10 +171,14 @@ class TestBaseline:
         tree = justfile_tree_builder({"justfile": LEGACY})
         path = tree / "justfile"
         hook_builder("PreToolUse", path=path)
-        # `run` already breaks doc-attr and splat; the second line is new.
-        path.write_text(LEGACY.replace("    uv run app {{ args }}", "    echo one\n    echo two"))
+        # `run` already breaks doc-attr and splat; the third line is new.
+        path.write_text(
+            LEGACY.replace(
+                "    uv run app {{ args }}", "    echo one\n    echo two\n    echo three"
+            )
+        )
         reported = _reported(hook_builder("PostToolUse", path=path))
-        assert [line.split(":")[0].split("  ")[-1] for line in reported] == ["shebang"]
+        assert [line.split(":")[0].split("  ")[-1] for line in reported] == ["script"]
 
     def test_the_baseline_is_taken_once_per_context(
         self,

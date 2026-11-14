@@ -11,12 +11,15 @@ list: (tools::list source_file)
 forward *args:
     uv run app "$@"
 
-[doc("Two commands, in one shell")]
+[doc("Two commands, linewise")]
 two-lines:
-    #!/usr/bin/env bash
-    set -euo pipefail
     echo one
     echo two
+
+[doc("Logic kept in a script")]
+[positional-arguments]
+check *args:
+    uv run scripts/check.py "$@"
 
 [private]
 _hidden:

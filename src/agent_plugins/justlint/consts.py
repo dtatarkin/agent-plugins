@@ -15,10 +15,7 @@ RULES: dict[RuleId, Rule] = {
     RuleId.PRIVATE_PREFIX: Rule(
         "pair a leading `_` in the name with the [private] attribute", "recipes"
     ),
-    RuleId.SHEBANG: Rule(
-        "open the body with `#!/usr/bin/env bash` and `set -euo pipefail`", "recipes"
-    ),
-    RuleId.STRICT: Rule("add `set -euo pipefail` under the shebang", "recipes"),
+    RuleId.SCRIPT: Rule("move the body into a script file and call it in one line", "recipes"),
     RuleId.SPLAT: Rule('add [positional-arguments] and pass `"$@"`', "arguments"),
     RuleId.MODULE_PREAMBLE: Rule(
         "add `source_file := source_file()` and a `list` recipe", "modules"
@@ -48,9 +45,10 @@ NESTED_SHELL_COMMANDS = ("git submodule foreach", "sops exec-env", "sops-exec-en
 # Anything without a quote of its own would do.
 INTERPOLATION_PLACEHOLDER = "{{}}"
 
-# `set -euo pipefail` belongs directly under the shebang, so only the opening
-# lines of a body are searched for it.
-STRICT_PREAMBLE_LINES = 3
+# The longest linewise body that is still "a command or two". Two lines cover
+# a forward to one recipe and then another; a third is logic, which belongs in
+# a script. A shebang body is a script whatever its length.
+MAX_BODY_LINES = 2
 
 # Directories a directory audit never descends into. Another repository is
 # pruned separately, by its own `.git`.

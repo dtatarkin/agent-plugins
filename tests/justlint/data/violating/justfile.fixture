@@ -22,13 +22,14 @@ private-without-underscore:
 forward *args:
     uv run app {{ args }}
 
-[doc("Two commands, linewise")]
-two-lines:
+[doc("Three commands, linewise")]
+three-lines:
     echo one
     echo two
+    echo three
 
-[doc("A bash body that is not strict")]
-loose:
+[doc("A script hidden behind a shebang")]
+hidden-script:
     #!/usr/bin/env bash
+    set -euo pipefail
     echo one
-    echo two

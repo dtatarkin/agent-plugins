@@ -24,15 +24,9 @@ CASES: dict[RuleId, tuple[str, str]] = {
         '[private]\n[doc("Never listed")]\n_run:\n    echo hi\n',
         "[private]\n_run:\n    echo hi\n",
     ),
-    RuleId.SHEBANG: (
+    RuleId.SCRIPT: (
+        '[doc("Three commands")]\nrun:\n    echo one\n    echo two\n    echo three\n',
         '[doc("Two commands")]\nrun:\n    echo one\n    echo two\n',
-        '[doc("Two commands")]\nrun:\n'
-        "    #!/usr/bin/env bash\n    set -euo pipefail\n    echo one\n    echo two\n",
-    ),
-    RuleId.STRICT: (
-        '[doc("Loose")]\nrun:\n    #!/usr/bin/env bash\n    echo one\n    echo two\n',
-        '[doc("Strict")]\nrun:\n'
-        "    #!/usr/bin/env bash\n    set -euo pipefail\n    echo one\n    echo two\n",
     ),
     RuleId.SPLAT: (
         '[doc("Forward")]\nrun *args:\n    uv run app {{ args }}\n',
@@ -122,6 +116,42 @@ class TestRuleChecks:
             {"justfile": "mod tools 'tools.just'\n", "tools.just": MODULE_WITH_PREAMBLE}
         )
         assert _rules(tree, "tools.just") == []
+
+
+# A shebang body is a script hidden in the justfile, whatever runs it and
+# however short it is.
+SHEBANG_BODIES = {
+    "strict bash": (
+        '[doc("Bash")]\nrun:\n    #!/usr/bin/env bash\n    set -euo pipefail\n    echo hi\n'
+    ),
+    "python": '[doc("Python")]\nrun:\n    #!/usr/bin/env python3\n    print("hi")\n',
+}
+
+
+class TestScriptBodies:
+    @pytest.mark.parametrize("kind", list(SHEBANG_BODIES))
+    def test_a_shebang_body_is_reported(
+        self, kind: str, justfile_tree_builder: Callable[..., Path]
+    ) -> None:
+        tree = justfile_tree_builder({"justfile": SHEBANG_BODIES[kind]})
+        findings = file_findings(tree / "justfile")
+        assert [(f.rule.value, f.detail) for f in findings] == [("script", "shebang body")]
+
+    def test_a_long_linewise_body_names_its_length(
+        self, justfile_tree_builder: Callable[..., Path]
+    ) -> None:
+        tree = justfile_tree_builder({"justfile": CASES[RuleId.SCRIPT][0]})
+        assert [f.detail for f in file_findings(tree / "justfile")] == ["3-line body"]
+
+    def test_a_one_line_call_to_a_script_is_silent(
+        self, justfile_tree_builder: Callable[..., Path]
+    ) -> None:
+        text = (
+            '[doc("Check it")]\n[positional-arguments]\n'
+            'check *args:\n    uv run scripts/check.py "$@"\n'
+        )
+        tree = justfile_tree_builder({"justfile": text})
+        assert _rules(tree) == []
 
 
 class TestNestedShellExemption:

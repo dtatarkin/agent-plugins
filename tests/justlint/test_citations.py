@@ -29,7 +29,7 @@ PLUGIN_DIR = REPO_ROOT / "plugins" / "just-rules"
 # syntax the rule mandates or forbids wherever that discriminates — syntax
 # cannot be reworded without changing the rule itself — plus, where two rules
 # share a file and the same syntax, the one prose word that separates them
-# (`help`, `strict`, `shebang`, `parse`). Prose otherwise stays out: these files
+# (`help`, `script`, `parse`). Prose otherwise stays out: these files
 # are rewritten often, and a marker that pins a sentence would fail on a reflow.
 Marker = tuple[str, ...]
 EVIDENCE: dict[RuleId, tuple[Marker, ...]] = {
@@ -41,10 +41,9 @@ EVIDENCE: dict[RuleId, tuple[Marker, ...]] = {
     RuleId.PRIVATE_DOC: (("[private]", "[doc(", "help"),),
     # The pairing itself: a leading `_` and the attribute, in one breath.
     RuleId.PRIVATE_PREFIX: (("[private]", "_"),),
-    # The word and the line. A neighbouring example carries the line alone.
-    RuleId.SHEBANG: (("shebang", "#!/usr/bin/env bash"),),
-    # Strict mode rides in the shebang bullet, so the line alone is not enough.
-    RuleId.STRICT: (("strict", "set -euo pipefail"),),
+    # Where the logic goes and the body it replaces, in one bullet: either
+    # phrase alone could sit in a neighbouring bullet's aside.
+    RuleId.SCRIPT: (("script file", "shebang body"),),
     # What to do, and the splat it replaces — the refinement bullets below it
     # show the shape but never the anti-pattern.
     RuleId.SPLAT: (("[positional-arguments]", '"$@"', "{{ args }}"),),
@@ -113,38 +112,34 @@ class TestEveryCitation:
         assert citation_violations(rule, RULES[rule].topic, PLUGIN_DIR) == []
 
 
-# `recipes.md` as it might read after the shebang rule was dropped: both of that
-# rule's tokens survive — the word in one bullet, the line in another bullet's
-# example — so only the block scope catches the loss.
-DROPPED_SHEBANG = """\
+# `recipes.md` as it might read after the script rule was dropped: both of that
+# rule's phrases survive — one in an example's comment, one in another bullet —
+# so only the block scope catches the loss.
+DROPPED_SCRIPT = """\
 # Recipes
 
 - **Help text via `[doc("…")]`, always.** Every recipe in `just --list` carries one.
 - **Separate a rationale comment from the recipe with one blank line.**
 
   ```just
-  # why this exists
+  # the logic lives in a script file
 
   [doc("Run it")]
   run:
-      #!/usr/bin/env bash
+      uv run scripts/run.py
   ```
 
 - **Don't hand-order attributes.** `just --fmt` sorts them, a shebang body included.
 """
 
 # The same file with the rule back in one piece.
-KEPT_SHEBANG = """\
+KEPT_SCRIPT = """\
 # Recipes
 
 - **Help text via `[doc("…")]`, always.** Every recipe in `just --list` carries one.
-- **Shebang body for multi-line shell.** Without a shebang each line gets its own shell.
+- **Longer logic is a script file.** The recipe calls it in one line.
 
-  ```just
-  [doc("Run it")]
-  run:
-      #!/usr/bin/env bash
-  ```
+  Never write a shebang body.
 """
 
 
@@ -158,21 +153,21 @@ def _plugin(tmp_path: Path, topic: str, text: str) -> Path:
 
 class TestRejections:
     def test_a_citation_to_a_file_that_is_not_there(self, tmp_path: Path) -> None:
-        assert citation_violations(RuleId.SHEBANG, "recipes", tmp_path) == [
-            "shebang cites skills/just/references/recipes.md, which the plugin does not ship"
+        assert citation_violations(RuleId.SCRIPT, "recipes", tmp_path) == [
+            "script cites skills/just/references/recipes.md, which the plugin does not ship"
         ]
 
     def test_a_renamed_topic(self, tmp_path: Path) -> None:
-        plugin = _plugin(tmp_path, "bodies", KEPT_SHEBANG)
-        assert citation_violations(RuleId.SHEBANG, "recipes", plugin) == [
-            "shebang cites skills/just/references/recipes.md, which the plugin does not ship"
+        plugin = _plugin(tmp_path, "bodies", KEPT_SCRIPT)
+        assert citation_violations(RuleId.SCRIPT, "recipes", plugin) == [
+            "script cites skills/just/references/recipes.md, which the plugin does not ship"
         ]
 
     def test_a_file_that_no_longer_states_the_rule(self, tmp_path: Path) -> None:
-        plugin = _plugin(tmp_path, "recipes", DROPPED_SHEBANG)
-        assert citation_violations(RuleId.SHEBANG, "recipes", plugin) == [
-            "shebang: skills/just/references/recipes.md states no rule holding "
-            "shebang + #!/usr/bin/env bash"
+        plugin = _plugin(tmp_path, "recipes", DROPPED_SCRIPT)
+        assert citation_violations(RuleId.SCRIPT, "recipes", plugin) == [
+            "script: skills/just/references/recipes.md states no rule holding "
+            "script file + shebang body"
         ]
 
     def test_one_half_of_a_two_part_rule(self, tmp_path: Path) -> None:
@@ -182,5 +177,5 @@ class TestRejections:
         ]
 
     def test_a_file_that_states_it(self, tmp_path: Path) -> None:
-        plugin = _plugin(tmp_path, "recipes", KEPT_SHEBANG)
-        assert citation_violations(RuleId.SHEBANG, "recipes", plugin) == []
+        plugin = _plugin(tmp_path, "recipes", KEPT_SCRIPT)
+        assert citation_violations(RuleId.SCRIPT, "recipes", plugin) == []

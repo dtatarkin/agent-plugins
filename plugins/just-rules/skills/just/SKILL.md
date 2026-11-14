@@ -18,5 +18,11 @@ to the change, then follow them.
 | Recipe parameters, forwarding user args, calls between recipes | `references/arguments.md` |
 | A project entrypoint `justfile` or its `.just` | `references/consumer.md` |
 
+Some topics live in other domains, and this router points rather than repeats:
+
+| You are editing… | Read |
+|------------------|------|
+| The script a recipe calls — which language it is written in | `python-rules:python` → its `scripts.md` |
+
 If a change spans several topics, read each relevant file. Do not guess at the
 rules — read the file.

@@ -1,6 +1,8 @@
 #!/bin/sh
 # A script run in exec form, so that no project's shell prefix ever wraps the
 # check for whether the checker is installed.
+# It is POSIX sh rather than Python because it must run, and exit quietly, on
+# a host with no Python at all, where the checker cannot be installed either.
 
 if [ "$1" = "--notice" ]; then
   tool=$2

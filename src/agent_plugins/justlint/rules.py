@@ -17,9 +17,9 @@ from pathlib import Path
 
 from agent_plugins.justlint.consts import (
     INTERPOLATION_PLACEHOLDER,
+    MAX_BODY_LINES,
     MODULE_SUFFIX,
     NESTED_SHELL_COMMANDS,
-    STRICT_PREAMBLE_LINES,
 )
 from agent_plugins.justlint.types import Finding, JsonObject, RuleId
 
@@ -80,10 +80,10 @@ def _check_recipe(source: Path, name: str, recipe: JsonObject) -> Iterator[Findi
         yield Finding(source, name, RuleId.SPLAT, "{{ " + ", ".join(splatted) + " }} in the body")
 
     body: list[list[object]] = recipe["body"]
-    if not recipe["shebang"] and len(body) > 1:
-        yield Finding(source, name, RuleId.SHEBANG, f"{len(body)}-line body")
-    if recipe["shebang"] and body and _is_bash_shebang(body[0]) and not _is_strict(body):
-        yield Finding(source, name, RuleId.STRICT)
+    if recipe["shebang"]:
+        yield Finding(source, name, RuleId.SCRIPT, "shebang body")
+    elif len(body) > MAX_BODY_LINES:
+        yield Finding(source, name, RuleId.SCRIPT, f"{len(body)}-line body")
 
 
 def _splatted_variadics(recipe: JsonObject) -> list[str]:
@@ -144,12 +144,3 @@ def _opens_nested_shell(prefix: str) -> bool:
 def _literal_text(fragments: list[object]) -> str:
     """The literal text of body-line fragments, interpolations stood in for."""
     return "".join(f if isinstance(f, str) else INTERPOLATION_PLACEHOLDER for f in fragments)
-
-
-def _is_bash_shebang(line: list[object]) -> bool:
-    text = _literal_text(line)
-    return text.startswith("#!") and "bash" in text
-
-
-def _is_strict(body: list[list[object]]) -> bool:
-    return any("set -euo pipefail" in _literal_text(line) for line in body[:STRICT_PREAMBLE_LINES])

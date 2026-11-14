@@ -22,15 +22,12 @@ paths:
   ```
 
 - **With a named parameter *before* the variadic**, `"$@"` would include it —
-  use a shebang body and `shift`:
+  drop it with `shift` on the same line and pass it as `{{ quote(cmd) }}`:
 
   ```just
   [positional-arguments]
   dbt cmd *args:
-      #!/usr/bin/env bash
-      set -euo pipefail
-      cmd=$1; shift
-      uv run dbt "$cmd" --project-dir dbt_proj "$@"
+      shift; uv run dbt {{ quote(cmd) }} --project-dir dbt_proj "$@"
   ```
 
 - **For a single named parameter interpolated into shell text**, escape it with
