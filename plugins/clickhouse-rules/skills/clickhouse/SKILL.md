@@ -11,7 +11,7 @@ to the change, then follow them.
 
 | You are editing… | Read |
 |------------------|------|
-| A query or read model over a `ReplacingMergeTree` / `CollapsingMergeTree` table, or the DDL of one | `references/read-time-dedup.md` |
+| A query or read model over a `ReplacingMergeTree` / `(Versioned)CollapsingMergeTree` table, or the DDL of one | `references/read-time-dedup.md` |
 | A query with a `JOIN`, or the choice between a join, a dictionary and a denormalized column | `references/joins.md` |
 
 If a change spans several topics, read each relevant file. Do not guess at the

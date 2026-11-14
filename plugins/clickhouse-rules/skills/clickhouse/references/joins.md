@@ -21,20 +21,25 @@ genuinely warrants it.
 3. Denormalize at write time, and only the read-hot attributes. Join once
    where the row is produced — a materialized view, a transformation model
    (dbt), the insert path — so every read scans one wide table and none
-   repeats the join. Copy what reads filter or group by; leave the rest
-   behind the key. Never copy mutable state into a fact row: a copied
+   repeats the join. Copy what reads filter on, which a dictionary cannot
+   serve from an index (2); look the rest up, or leave it behind the key.
+   Never copy mutable state into a fact row: a copied
    attribute is frozen at insert and stale the moment its source changes.
 4. Cap a read-path query at three or four joins. Each join is another hash
    table, another pass over the left side and another order the planner can
    get wrong. A query that needs more is reading a model that does not exist
    yet — build the mart (3) and read that.
-5. Give a large-against-large join a spill threshold, not a memory cap.
-   Without one a hash join never spills: it grows until the query's memory
-   limit kills it. `max_bytes_before_external_join` (or the
-   `_ratio_` variant) makes the right side spill to disk instead; every hash
-   algorithm honours it, and `grace_hash` partitions from the first block.
-   `max_rows_in_join` / `max_bytes_in_join` are hard caps that fail the
-   query, not spill it. Set the threshold on the query or its settings
-   profile, not server-wide: a non-zero threshold also makes the planner
-   sort an `ORDER BY … LIMIT` on the preserved side instead of reading it in
-   key order, which slows the joins that would have fit anyway.
+5. Let a large-against-large join spill; never lean on a memory cap. A hash
+   join spills its right side to disk, as a grace hash join, once it passes
+   `max_bytes_before_external_join` or the
+   `max_bytes_ratio_before_external_join` share of available memory; with
+   both at 0 it never spills, and grows until the query's memory limit kills
+   it. Recent servers default the ratio to 0.5 and older ones leave spilling
+   off, so read the effective values from `system.settings` rather than
+   assume either. Spilling also needs a temporary data path.
+   `max_rows_in_join` / `max_bytes_in_join` stop the query from 26.10 on,
+   where earlier versions spilled on reaching them, so a cap bounds a join
+   but does not rescue it. A non-zero threshold disables reading in order
+   through the join, so an `ORDER BY … LIMIT` on the left side sorts instead
+   of reading in key order: where such a query's right side is known to fit,
+   set both thresholds to 0 on that query alone.
