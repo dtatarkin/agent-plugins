@@ -30,7 +30,7 @@
 
 ## 3. Tags
 
-- [ ] 3.1 After the work above is committed on the trunk, run
+- [x] 3.1 After the work above is committed on the trunk, run
   `claude plugin tag plugins/just-rules`, then `python-rules`, then
   `lint-rules`, and verify `git tag --points-at HEAD` lists
   `just-rules--v0.2.0`, `python-rules--v0.2.0` and `lint-rules--v0.6.0`

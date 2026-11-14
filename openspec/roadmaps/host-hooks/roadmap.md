@@ -10,7 +10,7 @@ Antigravity CLI.
 
 - **Change:** `host-support-record-and-tags`
 - **After:** —
-- **State:** active
+- **State:** done
 - **Effort:** s
 
 Scope in the change: the record as a per-host table, and version bumps and tags.
