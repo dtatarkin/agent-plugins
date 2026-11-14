@@ -47,6 +47,16 @@ repos:
         language: system
         files: ^(scripts/check-private-names|tests/(scripts/test_|fixtures/scripts/)check_private_names\.py)$
         pass_filenames: false
+      # A plugin changed without a version bump: every file under plugins/,
+      # whatever its type, ships in the plugin, so the boundary is the path.
+      # The test compares each plugin's tree with its version's tag, so it
+      # takes no filenames.
+      - id: plugin-versions
+        name: plugin versions follow their files
+        entry: uv run pytest -q tests/plugins/test_plugin_versions.py
+        language: system
+        files: ^(plugins/|tests/plugins/test_plugin_versions\.py$)
+        pass_filenames: false
 
   # Baseline: file hygiene.
   - repo: https://github.com/pre-commit/pre-commit-hooks

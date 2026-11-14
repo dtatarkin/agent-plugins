@@ -45,8 +45,8 @@ The install copies that one plugin into the Antigravity CLI's plugin folder, so
 the clone need not stay in place; re-run the install from an updated clone to
 update the plugin.
 
-[`docs/host-support.md`](docs/host-support.md) records each host's install as
-it was run, with its outcome.
+[`docs/host-support.md`](docs/host-support.md) records what each host does with
+these plugins, as last verified.
 
 ## Install the checkers
 

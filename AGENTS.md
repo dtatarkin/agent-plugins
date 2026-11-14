@@ -27,6 +27,21 @@ editing one.
   plugin texts under `tests/plugins/`, linters for code. A rule held only by
   prose drifts.
 
+## Releasing a plugin
+
+- **A change to a plugin's files bumps its version**, in both its manifests,
+  in the same commit. Claude Code caches an installed plugin by its version,
+  so a change shipped without a bump never reaches a user who already has it.
+  The `plugin-versions` hook fails a commit that changes a released plugin
+  without one.
+- **Tag the bump once it is on the trunk**, with
+  `claude plugin tag plugins/<name>`, which also checks that the manifest and
+  the marketplace entry agree.
+- **Push the tags with the trunk, to both remotes**, `github` and `aws`. The
+  push is the owner's call.
+
+The `host-support` spec is the rule's home.
+
 ## Changes
 
 Changes are proposed, applied and archived through OpenSpec (`openspec/`).
