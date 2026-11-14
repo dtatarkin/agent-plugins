@@ -21,6 +21,38 @@ rules:
       is. This is a reminder of the Deviating section of AGENTS.md, the
       normative home.
 
+operations:
+  archive:
+    guidance:
+      - >-
+        Sync the change's delta specs into the main specs as part of archiving,
+        before the change directory moves: an archive that skips the sync leaves
+        the spec tree describing work that has already landed, and the deltas
+        that would have corrected it move into `archive/` in the same step.
+        Archive unsynced only on an explicit instruction given for that archive,
+        and then say in the summary that the main specs were left stale.
+      - >-
+        The sync is not a decision to put to the user. Take it, and report what
+        was done rather than asking what to do.
+      - >-
+        If a slot in a roadmap under openspec/roadmaps/ names the change being
+        archived, set that slot to `done` and file any unbuilt remainder as a new
+        slot or a follow-up, never as prose on the finished slot, in the
+        archive's own commit. Find it with:
+          grep -n -- '- \*\*Change:\*\* `<change>`$' openspec/roadmaps/*/roadmap.md
+        A change no slot names leaves every roadmap as it is, and no change
+        carries a task of its own for updating a roadmap. Normative home: the
+        project-roadmaps spec, kept outside this repository; this entry is a
+        reminder of it, not a second source.
+      - >-
+        After setting the slot, run `openspec-roadmap-reconcile` and read its
+        exit: 0 is expected; 1 lists disagreements to report and propose, never
+        to correct on the archive's own authority; 2 is reported and does not
+        stop the archive. Normative home: the project-roadmaps spec, kept
+        outside this repository; this entry is a reminder of it, not a second
+        source.
+      - The archive, its spec sync and its roadmap slot land as one commit. Do not push.
+
 # Project context (optional)
 # Add only constraints that should guide OpenSpec artifacts and workflows.
 # Include constraints an agent cannot infer by reading the code.
